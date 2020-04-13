@@ -108,42 +108,42 @@ void Software_PWM_Period_Set_Obj(PWM_OBJ *pwm, uint32_t period);
 
 
 
-#define NUM_PWM 5
+#define NUM_PWM 4
 PWM_OBJ pwms[NUM_PWM];
 
 // Wrappers for the Pin toggle defs
 static void PWM0_Set(void) {
-    IO_RB1_SetHigh();
-}
-
-static void PWM0_Clear(void) {
-    IO_RB1_SetLow();
-}
-
-static void PWM1_Set(void) {
     IO_RA2_SetHigh();
 }
 
-static void PWM1_Clear(void) {
+static void PWM0_Clear(void) {
     IO_RA2_SetLow();
 }
 
-static void PWM2_Set(void) {
+static void PWM1_Set(void) {
     IO_RA3_SetHigh();
 }
 
-static void PWM2_Clear(void) {
+static void PWM1_Clear(void) {
     IO_RA3_SetLow();
 }
 
-static void PWM3_Set(void) {
+static void PWM2_Set(void) {
     IO_RB4_SetHigh();
 }
 
-static void PWM3_Clear(void) {
+static void PWM2_Clear(void) {
     IO_RB4_SetLow();
 }
 
+static void PWM3_Set(void) {
+    IO_RA4_SetHigh();
+}
+
+static void PWM3_Clear(void) {
+    IO_RA4_SetLow();
+}
+/*
 static void PWM4_Set(void) {
     IO_RA4_SetHigh();
 }
@@ -151,7 +151,7 @@ static void PWM4_Set(void) {
 static void PWM4_Clear(void) {
     IO_RA4_SetLow();
 }
-
+*/
 
 /*void Software_PWM_Initialise(PWM_OBJ *pwm, uint16_t period, uint8_t dutyCycle, void (*set), void (*clear)) {
     pwm->count = 0;
@@ -171,10 +171,9 @@ PWM_OBJ Software_PWM_Create(uint16_t period, uint16_t dutyCycle, void (*set), vo
     result.period = period;
     result.Set_Pin = set;
     result.Clear_Pin = clear;
-    result.dutyCycle = dutyCycle;
     Software_PWM_Duty_Cycle_Set_Obj(&result, dutyCycle);
-    result.Set_Pin();
-    result.enabled = 1;
+    result.Clear_Pin();
+    result.enabled = 0;
     return result;
 }
 
@@ -203,13 +202,17 @@ void Software_PWM_Reset_Obj(PWM_OBJ *pwm) {
 void Software_PWM_Duty_Cycle_Set_Obj(PWM_OBJ *pwm, uint16_t dutyCycle) {
     pwm->highValue = (dutyCycle / 1000.0) * pwm->period;
     pwm->dutyCycle = dutyCycle;
-    Software_PWM_Reset_Obj(pwm);
+    if (pwm->enabled) {
+        Software_PWM_Reset_Obj(pwm);
+    }
 }
 void Software_PWM_Period_Set_Obj(PWM_OBJ *pwm, uint32_t period) {
     pwm->period = period;
     // Recalculate timer value for same duty cycle with new period
     Software_PWM_Duty_Cycle_Set_Obj(pwm, pwm->dutyCycle);
-    Software_PWM_Reset_Obj(pwm);
+    if (pwm->enabled) {
+        Software_PWM_Reset_Obj(pwm);
+    }
 }
 
 
@@ -223,7 +226,9 @@ void TMR2_Initialize (void) {
     // Inititialise timer count to 0
     TMR2 = 0x00;
     //Period = 0.001 s; Frequency = 4000000 Hz; PR2 3999; 
-    PR2 = 0xF9F;
+    //PR2 = 0xF9F; // 1ms
+    PR2 = 0x18F; // 100us
+    //PR2 = 0x27; // 10us
     //TCKPS 1:1; T32 16 Bit; TON enabled; TSIDL disabled; TCS FOSC/2; TGATE disabled; 
     T2CON = 0x8000;
 
@@ -231,11 +236,11 @@ void TMR2_Initialize (void) {
         TMR2_SetInterruptHandler(&TMR2_CallBack);
     }
     
-    pwms[0] = Software_PWM_Create(1000, 500, &PWM0_Set, &PWM0_Clear);
-    pwms[1] = Software_PWM_Create(2000, 500, &PWM1_Set, &PWM1_Clear);
-    pwms[2] = Software_PWM_Create(1000, 500, &PWM2_Set, &PWM2_Clear);
-    pwms[3] = Software_PWM_Create(2000, 500, &PWM3_Set, &PWM3_Clear);
-    pwms[4] = Software_PWM_Create(1000, 500, &PWM4_Set, &PWM4_Clear);
+    pwms[0] = Software_PWM_Create(10000, 500, &PWM0_Set, &PWM0_Clear);
+    pwms[1] = Software_PWM_Create(20000, 500, &PWM1_Set, &PWM1_Clear);
+    pwms[2] = Software_PWM_Create(10000, 500, &PWM2_Set, &PWM2_Clear);
+    pwms[3] = Software_PWM_Create(20000, 500, &PWM3_Set, &PWM3_Clear);
+    //pwms[4] = Software_PWM_Create(1000, 500, &PWM4_Set, &PWM4_Clear);
     
     // Reset timer interrupt occurred flag
     IFS0bits.T2IF = false;
@@ -384,7 +389,6 @@ void TMR2_SoftwareCounterClear(void)
     tmr2_obj.count = 0; 
 }
 */
- * 
 /**
  End of File
 */

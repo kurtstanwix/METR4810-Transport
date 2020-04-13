@@ -53,9 +53,30 @@
 */
 void INTERRUPT_Initialize (void)
 {
-    //    TI: T2 - Timer2
+    //    UERI: U2E - UART2 Error
     //    Priority: 1
-        IPC1bits.T2IP = 1;
-        //INTERRUPT_GlobalEnable();
+        IPC16bits.U2ERIP = 1;
+    //    UTXI: U2TX - UART2 Transmitter
+    //    Priority: 4
+        IPC7bits.U2TXIP = 4;
+    //    URXI: U2RX - UART2 Receiver
+    //    Priority: 4
+        IPC7bits.U2RXIP = 4;
+    //    TI: T2 - Timer2
+    //    Priority: 3
+        IPC1bits.T2IP = 3;
+    //    UERI: U1E - UART1 Error
+    //    Priority: 1
+        IPC16bits.U1ERIP = 1;
+    //    UTXI: U1TX - UART1 Transmitter
+    //    Priority: 5
+        IPC3bits.U1TXIP = 5;
+    //    URXI: U1RX - UART1 Receiver
+    //    Priority: 6
+        IPC2bits.U1RXIP = 6;
+    //    TI: T1 - Timer1
+    //    Priority: 7
+        IPC0bits.T1IP = 7;
+        INTERRUPT_GlobalEnable();
 
 }

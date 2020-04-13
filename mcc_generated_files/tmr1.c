@@ -54,6 +54,8 @@
 /**
  Section: File specific functions
 */
+void (*TMR1_InterruptHandler)(void) = NULL;
+void TMR1_CallBack(void);
 
 /**
   Section: Data Type Definitions
@@ -83,24 +85,40 @@ typedef struct _TMR_OBJ_STRUCT
 
 static TMR_OBJ tmr1_obj;
 
+typedef struct _TMR_DELAY_OBJ_STRUCT {
+    volatile bool enabled;
+    volatile uint16_t elapsed;
+} MS_DELAY_OBJ;
+
+MS_DELAY_OBJ ms_delay_obj;
+
 /**
   Section: Driver Interface
 */
 
-uint16_t prescaler = 1;
+uint16_t prescaler = 8;
 
 void TMR1_Initialize (void)
 {
     //TMR1 0; 
     TMR1 = 0x00;
-    //Period = 0.0000005 s; Frequency = 4000000 Hz; PR1 1; 
-    //PR1 = 0x01;
-    PR1 = 32768;
-    //TCKPS 1:1; TON enabled; TSIDL disabled; TCS FOSC/2; TECS SOSC; TSYNC disabled; TGATE disabled; 
+    //Period = 0.001 s; Frequency = 4000000 Hz; PR1 499; 
+    PR1 = 0x1F3;
+    //TCKPS 1:8; TON enabled; TSIDL disabled; TCS FOSC/2; TECS SOSC; TSYNC disabled; TGATE disabled; 
     T1CON = 0x8000;
     _TCKPS1 = 0;
-    _TCKPS0 = 0;
+    _TCKPS0 = 1;
 
+    if(TMR1_InterruptHandler == NULL)
+    {
+        TMR1_SetInterruptHandler(&TMR1_CallBack);
+    }
+	
+    ms_delay_obj.elapsed = 0;
+    ms_delay_obj.enabled = false;
+    
+    IFS0bits.T1IF = false;
+    IEC0bits.T1IE = true;
 	
     tmr1_obj.timerElapsed = false;
 
@@ -114,16 +132,31 @@ float TMR1_TickFrequencyGet(void) {
     return CLOCK_PeripheralFrequencyGet() / prescaler;
 }
 
+void TMR1_Delay_ms(uint16_t ms) {
+    ms_delay_obj.enabled = true;
+    while (ms_delay_obj.elapsed < ms);
+    ms_delay_obj.enabled = false;
+    ms_delay_obj.elapsed = 0;
+}
 
-void TMR1_Tasks_16BitOperation( void )
+void __attribute__ ( ( interrupt, no_auto_psv ) ) _T1Interrupt (  )
 {
     /* Check if the Timer Interrupt/Status is set */
-    if(IFS0bits.T1IF)
-    {
-        tmr1_obj.count++;
-        tmr1_obj.timerElapsed = true;
-        IFS0bits.T1IF = false;
+
+    //***User Area Begin
+
+    // ticker function call;
+    // ticker is 1 -> Callback function gets called everytime this ISR executes
+    if(TMR1_InterruptHandler) 
+    { 
+           TMR1_InterruptHandler(); 
     }
+    
+    //***User Area End
+
+    tmr1_obj.count++;
+    tmr1_obj.timerElapsed = true;
+    IFS0bits.T1IF = false;
 }
 
 void TMR1_Period16BitSet( uint16_t value )
@@ -153,13 +186,26 @@ uint16_t TMR1_Counter16BitGet( void )
 }
 
 
+void __attribute__ ((weak)) TMR1_CallBack(void) {
+    if (ms_delay_obj.enabled) {
+        ms_delay_obj.elapsed++;
+    }
+}
 
+void  TMR1_SetInterruptHandler(void (* InterruptHandler)(void))
+{ 
+    IEC0bits.T1IE = false;
+    TMR1_InterruptHandler = InterruptHandler; 
+    IEC0bits.T1IE = true;
+}
 
 void TMR1_Start( void )
 {
     /* Reset the status information */
     tmr1_obj.timerElapsed = false;
 
+    /*Enable the interrupt*/
+    IEC0bits.T1IE = true;
 
     /* Start the Timer */
     T1CONbits.TON = 1;
@@ -170,6 +216,8 @@ void TMR1_Stop( void )
     /* Stop the Timer */
     T1CONbits.TON = false;
 
+    /*Disable the interrupt*/
+    IEC0bits.T1IE = false;
 }
 
 bool TMR1_GetElapsedThenClear(void)

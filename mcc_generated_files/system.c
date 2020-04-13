@@ -45,19 +45,19 @@
 #include "pin_manager.h"
 #include "clock.h"
 #include "system.h"
-#include "uart1.h"
 #include "interrupt_manager.h"
+#include "../uart_manager.h"
 #include "traps.h"
 #include "oc2.h"
-#include "tmr1.h"
 #include "tmr2.h"
+#include "tmr1.h"
 
 void SYSTEM_Initialize(void)
 {
     PIN_MANAGER_Initialize();
-    CLOCK_Initialize();
     INTERRUPT_Initialize();
-    UART1_Initialize();
+    CLOCK_Initialize();
+    UART_Initialise();
     OC2_Initialize();
     TMR2_Initialize();
     TMR1_Initialize();

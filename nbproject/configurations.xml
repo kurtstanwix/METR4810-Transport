@@ -17,7 +17,12 @@
         <itemPath>mcc_generated_files/oc2.h</itemPath>
         <itemPath>mcc_generated_files/tmr2.h</itemPath>
         <itemPath>mcc_generated_files/pin_manager.h</itemPath>
+        <itemPath>mcc_generated_files/uart2.h</itemPath>
       </logicalFolder>
+      <itemPath>buffer.h</itemPath>
+      <itemPath>uart_manager.h</itemPath>
+      <itemPath>at_control.h</itemPath>
+      <itemPath>util.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -39,8 +44,13 @@
         <itemPath>mcc_generated_files/uart1.c</itemPath>
         <itemPath>mcc_generated_files/tmr2.c</itemPath>
         <itemPath>mcc_generated_files/pin_manager.c</itemPath>
+        <itemPath>mcc_generated_files/uart2.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
+      <itemPath>at_control.c</itemPath>
+      <itemPath>buffer.c</itemPath>
+      <itemPath>uart_manager.c</itemPath>
+      <itemPath>util.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

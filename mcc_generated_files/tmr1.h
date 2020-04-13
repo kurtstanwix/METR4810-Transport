@@ -59,6 +59,7 @@
 
 #endif
 
+#define TMR1_INTERRUPT_TICKER_FACTOR    1
 
 /**
   Section: Interface Routines
@@ -112,25 +113,7 @@ float TMR1_PeriodGetNS(void);
 
 float TMR1_TickFrequencyGet(void);
 
-/**
-  @Summary
-    Used to maintain the driver's state machine and implement its ISR
-
-  @Description
-    This routine is used to maintain the driver's internal state machine and
-    implement its ISR for interrupt-driven implementations.
-
-  @Param
-    None.
-
-  @Returns
-    None
- 
-  @Example 
-    Refer to the example of TMR1_Initialize();
-*/
-
-void TMR1_Tasks_16BitOperation( void );
+void TMR1_Delay_ms(uint16_t ms);
 
 /**
   @Summary
@@ -222,6 +205,26 @@ void TMR1_Counter16BitSet ( uint16_t value );
 
 uint16_t TMR1_Counter16BitGet( void );
 
+/**
+  @Summary
+    Assigns a function pointer with a callback address.
+
+  @Description
+    This routine assigns a function pointer with a callback address.
+
+  @Param
+    Address of the callback routine.
+
+  @Returns
+    None
+ 
+  @Example 
+    <code>
+        TMR1_SetInterruptHandler(&TMR1_CallBack);
+    </code>
+*/
+
+void TMR1_SetInterruptHandler(void (* InterruptHandler)(void));
 
 /**
   @Summary

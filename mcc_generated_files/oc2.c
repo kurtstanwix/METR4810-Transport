@@ -81,6 +81,8 @@ void OC2_Initialize (void)
      * bits 2-0: OCM (Mode) Edge-Aligned PWM -> 110
      */
     OC2CON1 = 0x1006;
+    
+    OC2CON1bits.OCM = 0; // Stop for now
     //OC2CON1 = 0x0; // Clear bits
     //OC2CON1bits.OCM = (1 << 2) || (1 << 1);
     //OC2CON1bits.OCTSEL = (1 << 2);

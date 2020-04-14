@@ -74,7 +74,7 @@ uint8_t read_line_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint16_t timeou
 }
 
 // Send the buffer contents to the specified 
-void send_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint8_t clearBuffer) {
+void send_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, bool clearBuffer) {
     uint8_t *sendPos = buffer->buffer;
     Software_PWM_Enable((uartNum - 1) * 2 + 1);
     while (sendPos != buffer->tail) {

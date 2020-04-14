@@ -52,7 +52,7 @@ uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum);
 
 uint8_t read_line_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint16_t timeout);
 
-void send_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint8_t clearBuffer);
+void send_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, bool clearBuffer);
 
 #endif
 

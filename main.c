@@ -170,6 +170,7 @@ int main(void)
             copy_to_buffer(&commandBuffer, "Reconnected\r\n", 13, true);
             send_buffer(&commandBuffer, PC_UART_NUM, true);
         }
+        
         //commandBuffer.tail = commandBuffer.buffer;
         rxStatus = read_line_to_buffer(&commandBuffer, PC_UART_NUM, 1);
 //#ifdef __DEBUG 

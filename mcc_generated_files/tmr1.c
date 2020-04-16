@@ -73,24 +73,29 @@ void TMR1_CallBack(void);
   Remarks:
     None.
 */
-
+/*
 typedef struct _TMR_OBJ_STRUCT
 {
-    /* Timer Elapsed */
+    /* Timer Elapsed *
     volatile bool           timerElapsed;
-    /*Software Counter value*/
+    /*Software Counter value*
     volatile uint8_t        count;
 
 } TMR_OBJ;
 
 static TMR_OBJ tmr1_obj;
 
-typedef struct _TMR_DELAY_OBJ_STRUCT {
-    volatile bool enabled;
-    volatile uint16_t elapsed;
-} MS_DELAY_OBJ;
+//typedef struct _TMR_DELAY_OBJ_STRUCT {
+//    volatile bool enabled;
+//    volatile uint16_t elapsed;
+//} MS_DELAY_OBJ;
 
-MS_DELAY_OBJ ms_delay_obj;
+//MS_DELAY_OBJ ms_delay_obj;
+*/
+
+typedef uint16_t ms_delay_t;
+
+volatile ms_delay_t delayMS;
 
 /**
   Section: Driver Interface
@@ -109,19 +114,15 @@ void TMR1_Initialize (void)
     _TCKPS1 = 0;
     _TCKPS0 = 1;
 
-    if(TMR1_InterruptHandler == NULL)
-    {
+    if(TMR1_InterruptHandler == NULL) {
         TMR1_SetInterruptHandler(&TMR1_CallBack);
     }
-	
-    ms_delay_obj.elapsed = 0;
-    ms_delay_obj.enabled = false;
+    delayMS = 0;
+    //ms_delay_obj.enabled = false;
     
+	T1CONbits.TON = false;
     IFS0bits.T1IF = false;
     IEC0bits.T1IE = true;
-	
-    tmr1_obj.timerElapsed = false;
-
 }
 
 float TMR1_PeriodGetNS(void) {
@@ -133,37 +134,27 @@ float TMR1_TickFrequencyGet(void) {
 }
 
 void TMR1_Delay_ms(uint16_t ms) {
-    ms_delay_obj.enabled = true;
-    while (ms_delay_obj.elapsed < ms);
-    ms_delay_obj.enabled = false;
-    ms_delay_obj.elapsed = 0;
+    T1CONbits.TON = true; // Enable timer
+    while (delayMS < ms); // Wait desired milliseconds
+    T1CONbits.TON = false; // Disable timer
+    delayMS = 0; // Reset delay;
 }
 
 void __attribute__ ( ( interrupt, no_auto_psv ) ) _T1Interrupt (  )
 {
-    /* Check if the Timer Interrupt/Status is set */
-
-    //***User Area Begin
-
-    // ticker function call;
-    // ticker is 1 -> Callback function gets called everytime this ISR executes
     if(TMR1_InterruptHandler) 
     { 
            TMR1_InterruptHandler(); 
     }
     
-    //***User Area End
-
-    tmr1_obj.count++;
-    tmr1_obj.timerElapsed = true;
-    IFS0bits.T1IF = false;
+    IFS0bits.T1IF = false; // Clear interrupt flag
 }
-
+/*
 void TMR1_Period16BitSet( uint16_t value )
 {
-    /* Update the counter values */
+    /* Update the counter values *
     PR1 = value;
-    /* Reset the status information */
+    /* Reset the status information *
     tmr1_obj.timerElapsed = false;
 }
 
@@ -174,9 +165,9 @@ uint16_t TMR1_Period16BitGet( void )
 
 void TMR1_Counter16BitSet ( uint16_t value )
 {
-    /* Update the counter values */
+    /* Update the counter values *
     TMR1 = value;
-    /* Reset the status information */
+    /* Reset the status information *
     tmr1_obj.timerElapsed = false;
 }
 
@@ -184,12 +175,10 @@ uint16_t TMR1_Counter16BitGet( void )
 {
     return( TMR1 );
 }
-
+*/
 
 void __attribute__ ((weak)) TMR1_CallBack(void) {
-    if (ms_delay_obj.enabled) {
-        ms_delay_obj.elapsed++;
-    }
+    delayMS++;
 }
 
 void  TMR1_SetInterruptHandler(void (* InterruptHandler)(void))
@@ -198,25 +187,25 @@ void  TMR1_SetInterruptHandler(void (* InterruptHandler)(void))
     TMR1_InterruptHandler = InterruptHandler; 
     IEC0bits.T1IE = true;
 }
-
+/*
 void TMR1_Start( void )
 {
-    /* Reset the status information */
+    /* Reset the status information *
     tmr1_obj.timerElapsed = false;
 
-    /*Enable the interrupt*/
+    /*Enable the interrupt*
     IEC0bits.T1IE = true;
 
-    /* Start the Timer */
+    /* Start the Timer *
     T1CONbits.TON = 1;
 }
 
 void TMR1_Stop( void )
 {
-    /* Stop the Timer */
+    /* Stop the Timer *
     T1CONbits.TON = false;
 
-    /*Disable the interrupt*/
+    /*Disable the interrupt*
     IEC0bits.T1IE = false;
 }
 
@@ -242,7 +231,7 @@ void TMR1_SoftwareCounterClear(void)
 {
     tmr1_obj.count = 0; 
 }
-
+*/
 /**
  End of File
 */

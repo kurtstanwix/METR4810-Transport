@@ -88,8 +88,9 @@ typedef struct _SOFTWARE_PWM_STRUCT
     // 
     volatile uint32_t highValue;
     // Current output state (0 or 1)
-    void (*Set_Pin)(void);
-    void (*Clear_Pin)(void);
+    //void (*Set_Pin)(void);
+    //void (*Clear_Pin)(void);
+    void (*set_pin)(uint8_t);
     volatile uint8_t enabled;
     volatile uint8_t state;
     volatile uint16_t dutyCycle;
@@ -102,20 +103,30 @@ typedef struct _SOFTWARE_PWM_STRUCT
 void (*TMR2_InterruptHandler)(void) = NULL;
 void TMR2_CallBack(void);
 
-void Software_PWM_Reset_Obj(PWM_OBJ *pwm);
-void Software_PWM_Duty_Cycle_Set_Obj(PWM_OBJ *pwm, uint16_t dutyCycle);
-void Software_PWM_Period_Set_Obj(PWM_OBJ *pwm, uint32_t period);
+void Software_PWM_Reset_Obj(volatile PWM_OBJ *pwm);
+void Software_PWM_Duty_Cycle_Set_Obj(volatile PWM_OBJ *pwm, uint16_t dutyCycle);
+void Software_PWM_Period_Set_Obj(volatile PWM_OBJ *pwm, uint32_t period);
 
 
 
 #define NUM_PWM 4
-PWM_OBJ pwms[NUM_PWM];
+volatile PWM_OBJ pwms[NUM_PWM];
 
 // Wrappers for the Pin toggle defs
-static void PWM0_Set(void) {
-    IO_RA2_SetHigh();
+static void PWM0_SetPin(uint8_t state) {
+    IO_RA2_SetPin(state);
+}
+static void PWM1_SetPin(uint8_t state) {
+    IO_RA3_SetPin(state);
+}
+static void PWM2_SetPin(uint8_t state) {
+    IO_RB4_SetPin(state);
+}
+static void PWM3_SetPin(uint8_t state) {
+    IO_RA4_SetPin(state);
 }
 
+/*
 static void PWM0_Clear(void) {
     IO_RA2_SetLow();
 }
@@ -164,22 +175,33 @@ static void PWM4_Clear(void) {
     pwm->enabled = 1;
 }*/
 
-
-PWM_OBJ Software_PWM_Create(uint16_t period, uint16_t dutyCycle, void (*set), void (*clear)) {
+/**
+ * Creates a software PWM object 
+ * @param period
+ * @param dutyCycle
+ * @param set
+ * @param clear
+ * @return 
+ */
+PWM_OBJ Software_PWM_Create(uint16_t period, uint16_t dutyCycle, void (*setPin)(uint8_t)) {
     PWM_OBJ result;
     result.count = 0;
     result.period = period;
-    result.Set_Pin = set;
-    result.Clear_Pin = clear;
+    //result.Set_Pin = set;
+    //result.Clear_Pin = clear;
+    result.set_pin = setPin;
     Software_PWM_Duty_Cycle_Set_Obj(&result, dutyCycle);
-    result.Clear_Pin();
+    //result.Clear_Pin();
+    result.state = 0;
+    result.set_pin(PIN_STATE_OFF);
     result.enabled = 0;
     return result;
 }
 
 void Software_PWM_Enable(uint8_t pwmIndex) {
     if (pwmIndex < NUM_PWM && !pwms[pwmIndex].enabled) {
-        pwms[pwmIndex].Set_Pin();
+        pwms[pwmIndex].state = PIN_STATE_ON;
+        pwms[pwmIndex].set_pin(PIN_STATE_ON);
         pwms[pwmIndex].enabled = 1;
         pwms[pwmIndex].count = 0;
     }
@@ -187,26 +209,28 @@ void Software_PWM_Enable(uint8_t pwmIndex) {
 
 void Software_PWM_Disable(uint8_t pwmIndex) {
     if (pwmIndex < NUM_PWM && pwms[pwmIndex].enabled) {
+        pwms[pwmIndex].state = PIN_STATE_OFF;
         pwms[pwmIndex].enabled = 0;
-        pwms[pwmIndex].Clear_Pin();
+        pwms[pwmIndex].set_pin(PIN_STATE_OFF);
         pwms[pwmIndex].count = 0;
     }
 }
 
-void Software_PWM_Reset_Obj(PWM_OBJ *pwm) {
+void Software_PWM_Reset_Obj(volatile PWM_OBJ *pwm) {
     pwm->count = 0;
-    pwm->Set_Pin();
+    pwm->state = PIN_STATE_ON;
+    pwm->set_pin(PIN_STATE_ON);
 }
 
 // Duty cycle in 1/10th of 1%: 1000 = 100%
-void Software_PWM_Duty_Cycle_Set_Obj(PWM_OBJ *pwm, uint16_t dutyCycle) {
+void Software_PWM_Duty_Cycle_Set_Obj(volatile PWM_OBJ *pwm, uint16_t dutyCycle) {
     pwm->highValue = (dutyCycle / 1000.0) * pwm->period;
     pwm->dutyCycle = dutyCycle;
     if (pwm->enabled) {
         Software_PWM_Reset_Obj(pwm);
     }
 }
-void Software_PWM_Period_Set_Obj(PWM_OBJ *pwm, uint32_t period) {
+void Software_PWM_Period_Set_Obj(volatile PWM_OBJ *pwm, uint32_t period) {
     pwm->period = period;
     // Recalculate timer value for same duty cycle with new period
     Software_PWM_Duty_Cycle_Set_Obj(pwm, pwm->dutyCycle);
@@ -236,10 +260,10 @@ void TMR2_Initialize (void) {
         TMR2_SetInterruptHandler(&TMR2_CallBack);
     }
     
-    pwms[0] = Software_PWM_Create(10000, 500, &PWM0_Set, &PWM0_Clear);
-    pwms[1] = Software_PWM_Create(20000, 500, &PWM1_Set, &PWM1_Clear);
-    pwms[2] = Software_PWM_Create(10000, 500, &PWM2_Set, &PWM2_Clear);
-    pwms[3] = Software_PWM_Create(20000, 500, &PWM3_Set, &PWM3_Clear);
+    pwms[0] = Software_PWM_Create(10000, 500, &PWM0_SetPin);
+    pwms[1] = Software_PWM_Create(20000, 500, &PWM1_SetPin);
+    pwms[2] = Software_PWM_Create(10000, 500, &PWM2_SetPin);
+    pwms[3] = Software_PWM_Create(20000, 500, &PWM3_SetPin);
     //pwms[4] = Software_PWM_Create(1000, 500, &PWM4_Set, &PWM4_Clear);
     
     // Reset timer interrupt occurred flag
@@ -323,13 +347,13 @@ void __attribute__ ((weak)) TMR2_CallBack(void)
             pwms[i].count++;
             if (pwms[i].state) {
                 if (pwms[i].count > pwms[i].highValue) {
-                    pwms[i].Clear_Pin();
-                    pwms[i].state = 0;
+                    pwms[i].set_pin(PIN_STATE_OFF);
+                    pwms[i].state = PIN_STATE_OFF;
                 }
             } else {
                 if (pwms[i].count >= pwms[i].period) {
-                    pwms[i].Set_Pin();
-                    pwms[i].state = 1;
+                    pwms[i].set_pin(PIN_STATE_ON);
+                    pwms[i].state = PIN_STATE_ON;
                     pwms[i].count = 0;
                 }
             }

@@ -247,30 +247,36 @@ void reset_bluetooth(void) {
 }
 
 bool get_connected_device_name(void) {
-    AT_PIN_Clear();
+    AT_PIN_Clear(); // Clear then set to ensure in AT mode
     TMR1_Delay_ms(100);
     AT_PIN_Set();
     TMR1_Delay_ms(100);
-    uint8_t attempts = 0;
+    
+    uint8_t attempts = 0; // Get address may fail, keep track of how many tries
     while (true) {
-        AT_PIN_Set();
+        // Command to get the most recent connected device address, MRAD
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_MRAD_INDEX],
                 atCommands[AT_COMMAND_BLANK_INDEX],
                 atCommands[AT_COMMAND_BLANK_INDEX]);
         
-        BLUETOOTH_CLEAR_RX_BUFFER();
+        BLUETOOTH_CLEAR_RX_BUFFER(); // To ensure only the upcoming response is read
         atRxBuffer.tail = atRxBuffer.buffer;
-        send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-        read_line_to_buffer(&atRxBuffer, BLUETOOTH_UART_NUM, 400);
+        send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true); // Send address request
+        read_line_to_buffer(&atRxBuffer, BLUETOOTH_UART_NUM, 400); // Hopefully is an MRAD response
         if (!compare_strings(atRxBuffer.buffer,
                 atCommands[AT_COMMAND_MRAD_INDEX].part,
                 atCommands[AT_COMMAND_MRAD_INDEX].length)) {
+            // Not an MRAD response (or nothing received), try read another line
+            // Two reads are necessary as the module will respond with the MRAD message,
+            // but also with an "OK" message which has the chance of coming first
             atRxBuffer.tail = atRxBuffer.buffer;
             read_line_to_buffer(&atRxBuffer, BLUETOOTH_UART_NUM, 400);
             if (!compare_strings(atRxBuffer.buffer,
                     atCommands[AT_COMMAND_MRAD_INDEX].part,
                     atCommands[AT_COMMAND_MRAD_INDEX].length)) {
+                // Second read was also not an MRAD, failed attempt
                 if (++attempts == 10) {
+                    // If 10 attempts, safe to assume a connection didn't actually occur
                     return false;
                 }
                 continue; // No MRAD response, try again
@@ -281,6 +287,7 @@ bool get_connected_device_name(void) {
                 atCommands[AT_COMMAND_MRAD_INDEX].length + \
                 atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length);
         if (!is_valid_address(hostAddress)) {
+            // Was a valid MRAD response, but address provided was invalid
             if (++attempts == 10) {
                 return false;
             }
@@ -289,33 +296,40 @@ bool get_connected_device_name(void) {
         BLUETOOTH_CLEAR_RX_BUFFER();
         break;
     }
-    attempts = 0;
+    attempts = 0; // Get name may fail, reset to keep track of how many tries
+    // Reformats received address into a valid argument format
     format_address(&hostAddress, AT_COMMAND_PARAM_SEPERATOR_CHAR_INDEX);
     while (true) {
-        AT_PIN_Set();
+        // Turns the address into a command argument
         AT_COMMAND_PART tempAddr = {hostAddress.formatted, FORMATTED_ADDR_LENGTH};
+        // Command to get the friendly name of a device, RNAME
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_RNAME_INDEX],
                 atCommandDividers[AT_COMMAND_QUERY_CHAR_INDEX],
                 tempAddr);
         
         atRxBuffer.tail = atRxBuffer.buffer;
-        send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
+        send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true); // Send name request
+        // Gets the response, with a large timeout as requesting a device name can
+        // take a while
         uint8_t status = read_line_to_buffer(&atRxBuffer, BLUETOOTH_UART_NUM, 2000);
         if (!compare_strings(atRxBuffer.buffer,
                 atCommands[AT_COMMAND_RNAME_INDEX].part,
                 atCommands[AT_COMMAND_RNAME_INDEX].length)) {
+            // Not a valid RNAME response, try again as a valid response can be
+            // followed by an "OK" message which sometimes gets received first
             atRxBuffer.tail = atRxBuffer.buffer;
             read_line_to_buffer(&atRxBuffer, BLUETOOTH_UART_NUM, 2000);
             if (!compare_strings(atRxBuffer.buffer,
                     atCommands[AT_COMMAND_RNAME_INDEX].part,
                     atCommands[AT_COMMAND_RNAME_INDEX].length)) {
+                // Second read failed
                 if (++attempts == 10) {
                     return false;
                 }
                 continue; // No RNAME response, try again
             }
         }
-        BLUETOOTH_CLEAR_RX_BUFFER();
+        BLUETOOTH_CLEAR_RX_BUFFER(); // In case "OK" message hasn't been cleared
         break;
     }
     // Remove the RNAME message header so atRxBuffer just contains the device name
@@ -327,26 +341,32 @@ bool get_connected_device_name(void) {
             atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length),
             true);
     return true;
-    //AT_PIN_Clear();
 }
 
-
+// Will wait indefinitely until a connection is made to a device with the correct
+// host name
 void wait_for_connection(void) {
     while (true) {
         init_bluetooth();
-        while (!BT_IS_CONNECTED()) {
+        while (!BT_IS_CONNECTED()) { // Pin will be high when connected
             AT_PIN_Clear();
             //get_bt_state(false);
             TMR1_Delay_ms(100);
         }
         get_connected_device_name();
+        // Need to decide if an exact hostname is required, or the base (first part)
+        // matching is fine, allowing for suffixes to distinguish different controllers
+        // Uncomment an combine the following to one if, if an exact match is needed
+        /*
+        if ((atRxBuffer.tail - atRxBuffer.buffer - 2) == controllerHostName.length)
+         */
         if (compare_strings(atRxBuffer.buffer, controllerHostName.part, controllerHostName.length)) {
             break;
         }
-        copy_to_buffer(&atTxBuffer, "Host Name Incorrect: ", 21, true);
-        copy_to_buffer(&atTxBuffer, atRxBuffer.buffer,
-                atRxBuffer.tail - atRxBuffer.buffer, false);
-        send_buffer(&atTxBuffer, PC_UART_NUM, true);
+        print_debug("Host Name Incorrect: ", 21);
+        print_debug(atRxBuffer.buffer, atRxBuffer.tail - atRxBuffer.buffer);
+        atRxBuffer.tail = atRxBuffer.buffer;
+        
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_DISC_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX]);

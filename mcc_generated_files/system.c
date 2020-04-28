@@ -47,6 +47,7 @@
 #include "system.h"
 #include "interrupt_manager.h"
 #include "../uart_manager.h"
+#include "../util.h"
 #include "traps.h"
 #include "oc2.h"
 #include "tmr2.h"
@@ -61,6 +62,9 @@ void SYSTEM_Initialize(void)
     OC2_Initialize();
     TMR2_Initialize();
     TMR1_Initialize();
+#ifdef __USER_DEBUG
+    init_debug();
+#endif
 }
 
 /**

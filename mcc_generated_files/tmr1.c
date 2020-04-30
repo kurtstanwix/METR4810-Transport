@@ -101,18 +101,35 @@ volatile ms_delay_t delayMS;
   Section: Driver Interface
 */
 
-uint16_t prescaler = 8;
+/*
+ * Valid values are:
+ * 256, 64, 8, 1
+ * Do not set otherwise
+ */
+#define TMR1_PRESCALER 8
 
 void TMR1_Initialize (void)
 {
     //TMR1 0; 
     TMR1 = 0x00;
     //Period = 0.001 s; Frequency = 4000000 Hz; PR1 499; 
-    PR1 = 0x1F3;
+    PR1 = 0x7CF;
     //TCKPS 1:8; TON enabled; TSIDL disabled; TCS FOSC/2; TECS SOSC; TSYNC disabled; TGATE disabled; 
-    T1CON = 0x8000;
-    _TCKPS1 = 0;
-    _TCKPS0 = 1;
+    T1CON = 0x0000;
+    switch(TMR1_PRESCALER) {
+        case 256:
+            _TCKPS = 0b11;
+            break;
+        case 64:
+            _TCKPS = 0b10;
+            break;
+        case 8:
+            _TCKPS = 0b01;
+            break;
+        case 1:
+            _TCKPS = 0b00;
+    }
+	T1CONbits.TON = 0; // Disable for now
 
     if(TMR1_InterruptHandler == NULL) {
         TMR1_SetInterruptHandler(&TMR1_CallBack);
@@ -120,17 +137,16 @@ void TMR1_Initialize (void)
     delayMS = 0;
     //ms_delay_obj.enabled = false;
     
-	T1CONbits.TON = false;
     IFS0bits.T1IF = false;
     IEC0bits.T1IE = true;
 }
 
 float TMR1_PeriodGetNS(void) {
-    return (PR1 + 1) * prescaler * (1000000000 / CLOCK_PeripheralFrequencyGet());
+    return (PR1 + 1) * TMR1_PRESCALER * (1000000000 / CLOCK_PeripheralFrequencyGet());
 }
 
 float TMR1_TickFrequencyGet(void) {
-    return CLOCK_PeripheralFrequencyGet() / prescaler;
+    return CLOCK_PeripheralFrequencyGet() / TMR1_PRESCALER;
 }
 
 void TMR1_Delay_ms(uint16_t ms) {

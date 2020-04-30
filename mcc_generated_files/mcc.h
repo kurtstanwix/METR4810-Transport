@@ -51,15 +51,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "tmr1.h"
-#include "tmr2.h"
-#include "uart1.h"
+#include "oc2.h"
 #include "interrupt_manager.h"
 #include "traps.h"
+#include "tmr3.h"
+#include "tmr2.h"
+#include "uart1.h"
 #include "uart2.h"
-#include "oc2.h"
 
 #ifndef _XTAL_FREQ
-#define _XTAL_FREQ  8000000UL
+#define _XTAL_FREQ  32000000UL
 #endif
 
 /**

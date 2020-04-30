@@ -42,8 +42,8 @@
     TERMS.
 */
 
-#ifndef _TMR2_H
-#define _TMR2_H
+#ifndef _SOFTWARE_PWM_H
+#define _SOFTWARE_PWM_H
 
 /**
   Section: Included Files
@@ -53,18 +53,28 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifdef __cplusplus  // Provide C++ Compatibility
 
-    extern "C" {
 
+#ifndef PWM_TMR_WRAPPER
+#define PWM_TMR_WRAPPER(NUM, FUNC) TMR ## NUM ## _ ## FUNC
+#endif
+#ifndef PWM_TMR_WRAPPER2
+#define PWM_TMR_WRAPPER2(NUM, FUNC) PWM_TMR_WRAPPER(NUM, FUNC)
 #endif
 
-#define TMR2_INTERRUPT_TICKER_FACTOR    1
+#define SOFTWARE_PWM_TMR 2
+#define Software_PWM_TMR_Function(FUNCTION) PWM_TMR_WRAPPER2(SOFTWARE_PWM_TMR, FUNCTION)
+
 
 /**
   Section: Interface Routines
 */
+void Software_PWM_Enable(uint8_t pwmIndex);
+void Software_PWM_Disable(uint8_t pwmIndex);
 
+void Software_PWM_Reset(uint8_t pwmIndex);
+void Software_PWM_Period_Set(uint8_t pwmIndex, uint32_t period);
+void Software_PWM_Duty_Cycle_Set(uint8_t pwmIndex, uint16_t dutyCycle);
 /**
   @Summary
     Initializes hardware and data for the given instance of the TMR module
@@ -107,7 +117,7 @@
     }
     </code>
 */
-void TMR2_Initialize (void);
+void Software_PWM_Initialize (void);
 
 
 /**
@@ -125,7 +135,7 @@ void TMR2_Initialize (void);
  
   @Example 
     Refer to the example of TMR2_Initialize();
-*/
+*
 
 void TMR2_Period16BitSet( uint16_t value );
 
@@ -145,7 +155,7 @@ void TMR2_Period16BitSet( uint16_t value );
  
   @Example 
     Refer to the example of TMR2_Initialize();
-*/
+*
 
 uint16_t TMR2_Period16BitGet( void );
 
@@ -177,7 +187,7 @@ uint16_t TMR2_Period16BitGet( void );
         }
     }
     </code>
-*/
+*
 
 void TMR2_Counter16BitSet ( uint16_t value );
 
@@ -196,7 +206,7 @@ void TMR2_Counter16BitSet ( uint16_t value );
  
   @Example 
     Refer to the example of TMR2_Counter16BitSet();
-*/
+*
 
 uint16_t TMR2_Counter16BitGet( void );
 
@@ -217,7 +227,7 @@ uint16_t TMR2_Counter16BitGet( void );
     <code>
         TMR2_SetInterruptHandler(&TMR2_CallBack);
     </code>
-*/
+*
 
 void TMR2_SetInterruptHandler(void (* InterruptHandler)(void));
 
@@ -236,7 +246,7 @@ void TMR2_SetInterruptHandler(void (* InterruptHandler)(void));
  
   @Example 
     Refer to the example of TMR2_Initialize();
-*/
+*
 
 void TMR2_Start( void );
 
@@ -255,7 +265,7 @@ void TMR2_Start( void );
  
   @Example 
     Refer to the example of TMR2_Initialize();
-*/
+*
 
 void TMR2_Stop( void );
 
@@ -276,7 +286,7 @@ void TMR2_Stop( void );
  
   @Example 
     Refer to the example of TMR2_Initialize();
-*/
+*
 
 bool TMR2_GetElapsedThenClear(void);
 
@@ -295,7 +305,7 @@ bool TMR2_GetElapsedThenClear(void);
  
   @Example 
     Refer to the example of TMR2_Initialize();
-*/
+*
 
 int TMR2_SoftwareCounterGet(void);
 
@@ -314,15 +324,10 @@ int TMR2_SoftwareCounterGet(void);
  
   @Example 
     Refer to the example of TMR2_Initialize();
-*/
+*
 
 void TMR2_SoftwareCounterClear(void);
-
-#ifdef __cplusplus  // Provide C++ Compatibility
-
-    }
-
-#endif
+*/
 
 #endif //_TMR2_H
     

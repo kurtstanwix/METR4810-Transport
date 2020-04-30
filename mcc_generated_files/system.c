@@ -47,20 +47,20 @@
 #include "system.h"
 #include "interrupt_manager.h"
 #include "../uart_manager.h"
+#include "../hardware_PWM.h"
 #include "../util.h"
 #include "traps.h"
-#include "oc2.h"
+#include "tmr3.h"
 #include "tmr2.h"
 #include "tmr1.h"
+#include "oc2.h"
 
-void SYSTEM_Initialize(void)
-{
+void SYSTEM_Initialize(void) {
     PIN_MANAGER_Initialize();
     INTERRUPT_Initialize();
     CLOCK_Initialize();
     UART_Initialise();
-    OC2_Initialize();
-    TMR2_Initialize();
+    Hardware_PWM_Initialise();
     TMR1_Initialize();
 #ifdef __USER_DEBUG
     init_debug();

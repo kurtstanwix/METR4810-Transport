@@ -6,6 +6,9 @@
 
 //#define __USER_DEBUG
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 void init_debug(void);
 void print_debug(char *toPrint, uint8_t length);
 bool compare_strings(uint8_t *toCheck, char *command, uint8_t commandLength);

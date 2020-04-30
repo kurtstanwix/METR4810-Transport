@@ -62,7 +62,7 @@ void CLOCK_Initialize(void)
     PMD3 = 0x00;
     // EEMD enabled; CTMUMD enabled; REFOMD enabled; ULPWUMD enabled; HLVDMD enabled; 
     PMD4 = 0x00;
-    // CF no clock failure; NOSC FRC; SOSCEN disabled; CLKLOCK unlocked; OSWEN Switch is Complete; 
-    __builtin_write_OSCCONH((uint8_t) (0x00));
+    // CF no clock failure; NOSC FRCPLL; SOSCEN disabled; CLKLOCK unlocked; OSWEN Switch is Complete; 
+    __builtin_write_OSCCONH((uint8_t) (0x01));
     __builtin_write_OSCCONL((uint8_t) (0x00));
 }

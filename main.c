@@ -42,7 +42,6 @@
     TERMS.
 */
 
-#define __USER_DEBUG
 #define __USER_CONTROL
 /**
   Section: Included Files
@@ -61,6 +60,7 @@
 #include "at_control.h"
 #include "uart_manager.h"
 #include "util.h"
+//#include "software_PWM.h"
 
 /*
 void delayUs(uint32_t delay_in_ms) {
@@ -132,6 +132,7 @@ int main(void)
     uint8_t data = 0;
     uint8_t rxStatus = UART_RX_STATUS_MORE;
     
+    /*
     Software_PWM_Period_Set(0, 10000);
     Software_PWM_Period_Set(1, 20000);
     Software_PWM_Period_Set(2, 10000);
@@ -147,12 +148,13 @@ int main(void)
     Software_PWM_Disable(2);
     Software_PWM_Disable(3);
     
-    /*
-    Software_PWM_Period_Set(0,200);
-    Software_PWM_Duty_Cycle_Set(0,500);
-    Software_PWM_Enable(0);
+    
+    Software_PWM_Period_Set(4,200);
+    Software_PWM_Duty_Cycle_Set(4,41);
+    Software_PWM_Enable(4);
+     * */
     uint16_t dutyCycle = 1;
-    */
+    
     
     
     
@@ -160,24 +162,33 @@ int main(void)
     PC_CLEAR_TX_BUFFER();
     uint8_t sendCommandTo = PC_UART_NUM;
     
-    init_bluetooth();
+    Hardware_PWM_Period_Set_us(20000);
+    Hardware_PWM_Start();
+    
+    //init_bluetooth();
     uint8_t state = BT_STATE_INVALID;
     print_debug("Waiting for connection...\r\n", 27);
-    wait_for_connection();
+    //wait_for_connection();
     print_debug("Connected\r\n", 11);
     while (1)
     {
-        /*
+        
         if (dutyCycle > 1000) {
             dutyCycle = 1;
         }
-        Software_PWM_Duty_Cycle_Set(0,dutyCycle);
+        Hardware_PWM_Duty_Cycle_Set(dutyCycle);
+        IO_RA3_SetPin(1);
+        TMR1_Delay_ms(100);
+        IO_RA3_SetPin(0);
+        dutyCycle+=1;
+        /*
+        Software_PWM_Duty_Cycle_Set(4,dutyCycle);
         IO_RA3_SetPin(1);
         TMR1_Delay_ms(500);
         IO_RA3_SetPin(0);
         dutyCycle+=10;
         */
-        
+        /*
        if (!BT_IS_CONNECTED()) {
             print_debug("Lost Connection\n\rReconnecting...\r\n", 34);
             wait_for_connection();
@@ -224,7 +235,7 @@ int main(void)
                         
                         
                         sendCommandTo = PC_UART_NUM;
-                        */ 
+                        *
                     } else {
                         print_debug(commandBuffer.buffer, commandBuffer.tail - commandBuffer.buffer);
                     }
@@ -248,7 +259,7 @@ int main(void)
             print_debug(packetBuffer.buffer, packetBuffer.tail - packetBuffer.buffer);
             packetBuffer.tail = packetBuffer.buffer;
         }
-        
+        */
         /*
         TMR1_Delay_ms(1000);
         if (state) {

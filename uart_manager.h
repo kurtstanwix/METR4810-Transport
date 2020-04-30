@@ -4,9 +4,12 @@
 #include "buffer.h"
 #include "mcc_generated_files/uart1.h"
 #include "mcc_generated_files/uart2.h"
+#include "util.h"
 
 #define BLUETOOTH_UART_NUM 1
+#ifdef __USER_DEBUG
 #define PC_UART_NUM 2
+#endif
 
 // define concatenation to call uart functions from the uart number
 #define UART_FUNC_WRAPPER(UART_NUM, FUNC) UART ## UART_NUM ## _ ## FUNC

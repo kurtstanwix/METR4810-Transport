@@ -48,6 +48,7 @@
 */
 
 #include "hardware_PWM.h"
+#include <stdbool.h>
 #include "mcc_generated_files/tmr3.h"
 
 /**
@@ -55,8 +56,23 @@
 */
 static const uint16_t OCMode = 0b110; // Edge-Aligned PWM;
 
-void Hardware_PWM_Initialise (void) {
-    /* Output Compare 2 Control Register 1
+
+#ifndef PWM_TMR_WRAPPER
+#define PWM_TMR_WRAPPER(NUM, FUNC) TMR ## NUM ## _ ## FUNC
+#endif
+#ifndef PWM_TMR_WRAPPER2
+#define PWM_TMR_WRAPPER2(NUM, FUNC) PWM_TMR_WRAPPER(NUM, FUNC)
+#endif
+
+#define HARDWARE_PWM_OC(OC_NUM, REGISTER) OC ## OC_NUM ## REGISTER
+#define HARDWARE_PWM_OC_REGISTER(OC, REGISTER) HARDWARE_PWM_OC(OC, REGISTER)
+
+
+#define Hardware_PWM_TMR_Function(FUNCTION) PWM_TMR_WRAPPER2(HARDWARE_PWM_TMR, FUNCTION)
+
+void Hardware_PWM_Initialise(void) {
+#ifdef HARDWARE_PWM1_OC_NUM
+    /* Output Compare for PWM1 Control Register 1
      * bit 13: OCSIDL (Stop in Idle Mode): Don't stop -> 0
      * bits 12-10: OCTSEL (Timer): As specified in hardware_PWM.h
      * bit 9: ENFLT2 (Comparator Fault Input): Disabled -> 0
@@ -68,25 +84,25 @@ void Hardware_PWM_Initialise (void) {
      * bit 3: TRIGMODE (Trigger Mode) Not triggering -> 0
      * bits 2-0: OCM (Mode) Edge-Aligned PWM -> 110 (000 to turn off for now)
      */
-    OC2CON1 = 0x0000; // Init
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1) = 0x0000; // Init
     switch (HARDWARE_PWM_TMR) {
-        case 1:
-            OC2CON1bits.OCTSEL = 0b100;
+        case 1: // TMR1
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1bits.OCTSEL) = 0b100;
             break;
-        case 2:
-            OC2CON1bits.OCTSEL = 0b000;
+        case 2: // TMR2
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1bits.OCTSEL) = 0b000;
             break;
-        case 3:
-            OC2CON1bits.OCTSEL = 0b001;
+        case 3: // TMR3
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1bits.OCTSEL) = 0b001;
             break;
-        case 4:
-            OC2CON1bits.OCTSEL = 0b010;
+        case 4: // TMR4
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1bits.OCTSEL) = 0b010;
             break;
-        case 5:
-            OC2CON1bits.OCTSEL = 0b011;
+        case 5: // TMR5
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1bits.OCTSEL) = 0b011;
     }
     
-    /* Output Compare 2 Control Register 2
+    /* Output Compare for PWM1 Control Register 2
      * bit 15: FLTMD (Fault Mode): Cycle -> 0
      * bit 14: FLTOUT (Fault Output): Low -> 0
      * bit 13: FLTTRIEN (Fault Pin State): Unaffected -> 0
@@ -98,21 +114,87 @@ void Hardware_PWM_Initialise (void) {
      * bit 5: OCTRIS (Pin direction) peripheral on pin -> 0
      * bits 4-0: SYNCSEL (Trigger/Synchronisation source) Self -> 11111
      */
-    OC2CON2 = 0x0000; // Init
-    //OC2CON2bits.OCTRIG = 0b0;
-    OC2CON2bits.SYNCSEL = 0b11111;
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON2) = 0x0000; // Init
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON2bits.SYNCSEL) = 0b11111;
     
-    // OC2RS 0
-    OC2RS = 0x0;
-    // OC2R 0; 
-    OC2R = 0x0;
-    // OC2TMR 0; 
-    OC2TMR = 0x00;
-	
+    // OCxRS 0
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, RS) = 0x0;
+    // OCxR 0; 
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, R) = 0x0;
+    // OCxTMR 0; 
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, TMR) = 0x00;
+#endif
+#ifdef HARDWARE_PWM2_OC_NUM
+    /* Output Compare for PWM2 Control Register 1
+     * Same as PWM1 */
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1) = 0x0000; // Init
+    switch (HARDWARE_PWM_TMR) {
+        case 1:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1bits.OCTSEL) = 0b100;
+            break;
+        case 2:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1bits.OCTSEL) = 0b000;
+            break;
+        case 3:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1bits.OCTSEL) = 0b001;
+            break;
+        case 4:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1bits.OCTSEL) = 0b010;
+            break;
+        case 5:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1bits.OCTSEL) = 0b011;
+    }
+    
+    /* Output Compare for PWM2 Control Register 2
+     * Same as PWM1 */
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON2) = 0x0000; // Init
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON2bits.SYNCSEL) = 0b11111;
+    
+    // OCxRS 0
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, RS) = 0x0;
+    // OCxR 0; 
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, R) = 0x0;
+    // OCxTMR 0; 
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, TMR) = 0x00;
+#endif
+#ifdef HARDWARE_PWM3_OC_NUM
+    /* Output Compare for PWM3 Control Register 1
+     * Same as PWM1 */
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1) = 0x0000; // Init
+    switch (HARDWARE_PWM_TMR) {
+        case 1:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1bits.OCTSEL) = 0b100;
+            break;
+        case 2:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1bits.OCTSEL) = 0b000;
+            break;
+        case 3:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1bits.OCTSEL) = 0b001;
+            break;
+        case 4:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1bits.OCTSEL) = 0b010;
+            break;
+        case 5:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1bits.OCTSEL) = 0b011;
+    }
+    
+    /* Output Compare for PWM3 Control Register 2
+     * Same as PWM1 */
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON2) = 0x0000; // Init
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON2bits.SYNCSEL) = 0b11111;
+    
+    // OCxRS 0
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, RS) = 0x0;
+    // OCxR 0; 
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, R) = 0x0;
+    // OCxTMR 0; 
+    HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, TMR) = 0x00;
+#endif
+    
     Hardware_PWM_TMR_Function(Initialize());
 }
 
-void Hardware_PWM_Period_Set_us(uint32_t us) {
+void Hardware_PWM_Period_Set_us(uint8_t pwmNum, uint32_t us) {
     /* Datasheet has period formula of:
      * period = (OC2RS + 1) / TMRFreq */
     
@@ -122,27 +204,126 @@ void Hardware_PWM_Period_Set_us(uint32_t us) {
     // Minimum is prescaler / 2 in uS
     // Maximum is prescaler * 2^14 in uS
     // Resolution is prescaler / 4 in uS
-    OC2RS = (uint16_t) (us * (TMR3_FrequencyGet() / 1000000) - 1);
+    switch (pwmNum) {
+#ifdef HARDWARE_PWM1_OC_NUM
+        case HARDWARE_PWM1_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, RS) = (uint16_t) (us * (Hardware_PWM_TMR_Function(FrequencyGet()) / 1000000) - 1);
+            break;
+#endif
+#ifdef HARDWARE_PWM2_OC_NUM
+        case HARDWARE_PWM2_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, RS) = (uint16_t) (us * (Hardware_PWM_TMR_Function(FrequencyGet()) / 1000000) - 1);
+            break;
+#endif
+#ifdef HARDWARE_PWM3_OC_NUM
+        case HARDWARE_PWM3_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, RS) = (uint16_t) (us * (Hardware_PWM_TMR_Function(FrequencyGet()) / 1000000) - 1);
+            break;
+#endif
+    }
 }
 
-void Hardware_PWM_Pulse_Width_Set_us(uint32_t us) {
+void Hardware_PWM_Pulse_Width_Set_us(uint8_t pwmNum, uint32_t us) {
     // Minimum is prescaler / 2 in uS
     // Maximum is prescaler * 2^14 in uS
     // Resolution is prescaler / 4 in uS
-    OC2R = (uint16_t) (us * (TMR3_FrequencyGet() / 1000000) - 1);
+    
+    switch (pwmNum) {
+#ifdef HARDWARE_PWM1_OC_NUM
+        case HARDWARE_PWM1_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, R) = (uint16_t) (us * (Hardware_PWM_TMR_Function(FrequencyGet()) / 1000000) - 1);
+            break;
+#endif
+#ifdef HARDWARE_PWM2_OC_NUM
+        case HARDWARE_PWM2_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, R) = (uint16_t) (us * (Hardware_PWM_TMR_Function(FrequencyGet()) / 1000000) - 1);
+            break;
+#endif
+#ifdef HARDWARE_PWM3_OC_NUM
+        case HARDWARE_PWM3_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, R) = (uint16_t) (us * (Hardware_PWM_TMR_Function(FrequencyGet()) / 1000000) - 1);
+            break;
+#endif
+    }
 }
 
 // Duty cycle in 1/10th of 1%: 1000 = 100%
-void Hardware_PWM_Duty_Cycle_Set(uint16_t percent) {
-    OC2R = (uint16_t)((uint32_t)OC2RS * percent / 1000);
+void Hardware_PWM_Duty_Cycle_Set(uint8_t pwmNum, uint16_t percent) {
+    switch (pwmNum) {
+#ifdef HARDWARE_PWM1_OC_NUM
+        case HARDWARE_PWM1_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, R) = \
+                    (uint16_t)((uint32_t)HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, RS) * percent / 1000);
+            break;
+#endif
+#ifdef HARDWARE_PWM2_OC_NUM
+        case HARDWARE_PWM2_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, R) = \
+                    (uint16_t)((uint32_t)HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, RS) * percent / 1000);
+            break;
+#endif
+#ifdef HARDWARE_PWM3_OC_NUM
+        case HARDWARE_PWM3_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, R) = \
+                    (uint16_t)((uint32_t)HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, RS) * percent / 1000);
+            break;
+#endif
+    }
 }
 
-void Hardware_PWM_Start(void) {
-    OC2CON1bits.OCM = OCMode;
+void Hardware_PWM_Start(uint8_t pwmNum) {
+    switch (pwmNum) {
+#ifdef HARDWARE_PWM1_OC_NUM
+        case HARDWARE_PWM1_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1bits.OCM) = OCMode;
+            break;
+#endif
+#ifdef HARDWARE_PWM2_OC_NUM
+        case HARDWARE_PWM2_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1bits.OCM) = OCMode;
+            break;
+#endif
+#ifdef HARDWARE_PWM3_OC_NUM
+        case HARDWARE_PWM3_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1bits.OCM) = OCMode;
+            break;
+#endif
+    }
+}
+
+void Hardware_PWM_Stop(uint8_t pwmNum) {
+    switch (pwmNum) {
+#ifdef HARDWARE_PWM1_OC_NUM
+        case HARDWARE_PWM1_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, CON1bits.OCM) = 0;
+            break;
+#endif
+#ifdef HARDWARE_PWM2_OC_NUM
+        case HARDWARE_PWM2_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, CON1bits.OCM) = 0;
+            break;
+#endif
+#ifdef HARDWARE_PWM3_OC_NUM
+        case HARDWARE_PWM3_OC_NUM:
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, CON1bits.OCM) = 0;
+            break;
+#endif
+    }
+}
+
+void Hardware_PWM_Enable(void) {
     Hardware_PWM_TMR_Function(Start());
 }
 
-void Hardware_PWM_Stop(void) {
-    OC2CON1bits.OCM = 0;
+void Hardware_PWM_Disable(void) {
+#ifdef HARDWARE_PWM1_OC_NUM
+    Hardware_PWM_Stop(HARDWARE_PWM1_OC_NUM);
+#endif
+#ifdef HARDWARE_PWM2_OC_NUM
+    Hardware_PWM_Stop(HARDWARE_PWM2_OC_NUM);
+#endif
+#ifdef HARDWARE_PWM3_OC_NUM
+    Hardware_PWM_Stop(HARDWARE_PWM3_OC_NUM);
+#endif
     Hardware_PWM_TMR_Function(Stop());
 }

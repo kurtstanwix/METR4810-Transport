@@ -8,6 +8,7 @@
 #include "mcc_generated_files/tmr2.h"
 #include "mcc_generated_files/tmr1.h"
 #include "uart_manager.h"
+#include "mcc_generated_files/pin_manager.h"
 
 /*
 typedef struct _UART_OBJ {
@@ -23,7 +24,11 @@ void UART_Initialise(void) {
     PC_INITIALISE();
 #endif
 }
+#define BLUETOOTH_UART_RX_LED_SetPin(STATE) IO_RB12_SetPin(STATE)
+#define BLUETOOTH_UART_TX_LED_SetPin(STATE) IO_RB13_SetPin(STATE)
 
+#define PC_UART_RX_LED_SetPin(STATE) IO_RB14_SetPin(STATE)
+#define PC_UART_TX_LED_SetPin(STATE) IO_RB15_SetPin(STATE)
 
 
 
@@ -35,7 +40,8 @@ void UART_Initialise(void) {
  * @return 
  */
 uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum) {
-    Software_PWM_Enable((uartNum - 1) * 2); // Receiving LED
+    uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_ON) :
+        PC_UART_RX_LED_SetPin(PIN_STATE_ON); // Receiving LED
     *(buffer->tail) = uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_READ() : PC_READ();
     //*(buffer->tail) = UART_READ(uartNum);
     buffer->tail++;
@@ -58,7 +64,8 @@ uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum) {
         return UART_RX_STATUS_BF;
         //send_buffer(&packetBuffer, PC_UART_NUM, true);
     }
-    Software_PWM_Disable((uartNum - 1) * 2);
+    uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_OFF) : \
+        PC_UART_RX_LED_SetPin(PIN_STATE_OFF);
     return UART_RX_STATUS_MORE;
 }
 
@@ -106,12 +113,14 @@ uint8_t read_line_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint16_t timeou
 // Send the buffer contents to the specified 
 void send_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, bool clearBuffer) {
     uint8_t *sendPos = buffer->buffer;
-    Software_PWM_Enable((uartNum - 1) * 2 + 1);
+    uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_TX_LED_SetPin(PIN_STATE_ON) :
+        PC_UART_TX_LED_SetPin(PIN_STATE_ON);
     while (sendPos != buffer->tail) {
         uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_WRITE(*sendPos) : PC_WRITE(*sendPos);
         sendPos++;
     }
-    Software_PWM_Disable((uartNum - 1) * 2 + 1);
+    uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_TX_LED_SetPin(PIN_STATE_OFF) :
+        PC_UART_TX_LED_SetPin(PIN_STATE_OFF);
     if (clearBuffer) {
         buffer->tail = buffer->buffer;
     }

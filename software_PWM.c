@@ -90,19 +90,19 @@ void __attribute__ ((weak)) Software_PWM_Handler(void);
 volatile PWM_OBJ pwms[NUM_PWM];
 
 // Wrappers for the Pin toggle defs
-static void PWM0_SetPin(uint8_t state) {
+static void Software_PWM0_SetPin(uint8_t state) {
     IO_RB15_SetPin(state);
 }
-static void PWM1_SetPin(uint8_t state) {
+static void Software_PWM1_SetPin(uint8_t state) {
     IO_RB13_SetPin(state);
 }
-static void PWM2_SetPin(uint8_t state) {
+static void Software_PWM2_SetPin(uint8_t state) {
     IO_RB4_SetPin(state);
 }
-static void PWM3_SetPin(uint8_t state) {
+static void Software_PWM3_SetPin(uint8_t state) {
     IO_RA4_SetPin(state);
 }
-static void PWM4_SetPin(uint8_t state) {
+static void Software_PWM4_SetPin(uint8_t state) {
     IO_RA2_SetPin(state);
 }
 
@@ -226,11 +226,11 @@ void Software_PWM_Period_Set_Obj(volatile PWM_OBJ *pwm, uint32_t period) {
 */
 
 void Software_PWM_Initialize (void) {
-    //pwms[0] = Software_PWM_Create(10000, 500, &PWM0_SetPin);
-    //pwms[1] = Software_PWM_Create(20000, 500, &PWM1_SetPin);
-    //pwms[2] = Software_PWM_Create(10000, 500, &PWM2_SetPin);
-    //pwms[3] = Software_PWM_Create(20000, 500, &PWM3_SetPin);
-    //pwms[4] = Software_PWM_Create(10000, 500, &PWM4_SetPin);
+    //pwms[0] = Software_PWM_Create(10000, 500, &Software_PWM0_SetPin);
+    //pwms[1] = Software_PWM_Create(20000, 500, &Software_PWM1_SetPin);
+    //pwms[2] = Software_PWM_Create(10000, 500, &Software_PWM2_SetPin);
+    //pwms[3] = Software_PWM_Create(20000, 500, &Software_PWM3_SetPin);
+    //pwms[4] = Software_PWM_Create(10000, 500, &Software_PWM4_SetPin);
     Software_PWM_TMR_Function(SetInterruptHandler(&Software_PWM_Handler));
     Software_PWM_TMR_Function(Initialize());
     //Software_PWM_Function(Start());

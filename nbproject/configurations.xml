@@ -19,13 +19,13 @@
         <itemPath>mcc_generated_files/pin_manager.h</itemPath>
         <itemPath>mcc_generated_files/uart2.h</itemPath>
         <itemPath>mcc_generated_files/tmr3.h</itemPath>
-        <itemPath>hardware_PWM.h</itemPath>
       </logicalFolder>
       <itemPath>buffer.h</itemPath>
       <itemPath>uart_manager.h</itemPath>
       <itemPath>at_control.h</itemPath>
       <itemPath>util.h</itemPath>
       <itemPath>software_PWM.h</itemPath>
+      <itemPath>hardware_PWM.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

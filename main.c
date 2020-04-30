@@ -47,7 +47,6 @@
   Section: Included Files
 */
 #include "mcc_generated_files/clock.h"
-#include "mcc_generated_files/oc2.h"
 #define FCY _XTAL_FREQ
 #include "mcc_generated_files/system.h"
 #include "mcc_generated_files/pin_manager.h"
@@ -61,6 +60,7 @@
 #include "uart_manager.h"
 #include "util.h"
 //#include "software_PWM.h"
+#include "hardware_PWM.h"
 
 /*
 void delayUs(uint32_t delay_in_ms) {
@@ -162,8 +162,11 @@ int main(void)
     PC_CLEAR_TX_BUFFER();
     uint8_t sendCommandTo = PC_UART_NUM;
     
-    Hardware_PWM_Period_Set_us(20000);
-    Hardware_PWM_Start();
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, 20000);
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM2_OC_NUM, 20000);
+    Hardware_PWM_Enable();
+    Hardware_PWM_Start(HARDWARE_PWM1_OC_NUM);
+    Hardware_PWM_Start(HARDWARE_PWM2_OC_NUM);
     
     //init_bluetooth();
     uint8_t state = BT_STATE_INVALID;
@@ -176,7 +179,8 @@ int main(void)
         if (dutyCycle > 1000) {
             dutyCycle = 1;
         }
-        Hardware_PWM_Duty_Cycle_Set(dutyCycle);
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, dutyCycle);
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM2_OC_NUM, 1001 - dutyCycle);
         IO_RA3_SetPin(1);
         TMR1_Delay_ms(100);
         IO_RA3_SetPin(0);

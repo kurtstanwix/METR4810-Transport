@@ -51,6 +51,7 @@
 #include <xc.h>
 #include <stdio.h>
 #include "pin_manager.h"
+#include "../util.h"
 
 /**
  Section: Driver Interface Function Definitions
@@ -62,7 +63,9 @@ void PIN_MANAGER_Initialize (void)
      ***************************************************************************/
     LATA = 0x0000; // Init PORTA output latches
     LATB = 0x0000; // Init PORTB output latches
+#ifdef __USER_DEBUG
     IO_RB0_SetPin(PIN_STATE_ON); // UART2 Tx requires pin start as on
+#endif    
     IO_RB7_SetPin(PIN_STATE_ON); // UART1 Tx requires pin start as on
 
     /****************************************************************************
@@ -76,8 +79,13 @@ void PIN_MANAGER_Initialize (void)
     IO_RA4_SetDirection(PIN_DIRECTION_OUTPUT);
     
     TRISB = 0x0000; // Init PORTB direction register
+#ifdef __USER_DEBUG
     IO_RB0_SetDirection(PIN_DIRECTION_OUTPUT); // UART2 Tx
     IO_RB1_SetDirection(PIN_DIRECTION_INPUT); // UART2 Rx
+#else
+    IO_RB0_SetDirection(PIN_DIRECTION_OUTPUT); // OC2 PWM
+    IO_RB1_SetDirection(PIN_DIRECTION_OUTPUT); // OC3 PWM
+#endif
     IO_RB2_SetDirection(PIN_DIRECTION_INPUT); // UART1 Rx
     IO_RB4_SetDirection(PIN_DIRECTION_OUTPUT);
     IO_RB7_SetDirection(PIN_DIRECTION_OUTPUT); // UART1 Tx
@@ -92,7 +100,7 @@ void PIN_MANAGER_Initialize (void)
      * Setting the Weak Pull Up and Weak Pull Down SFR(s)
      ***************************************************************************/
     CNPD1 = 0x0000;
-    CNPD2 = 0x0000;
+    CNPD2 = 0x0002;
     CNPD3 = 0x0000;
     CNPU1 = 0x0000;
     CNPU2 = 0x0000;

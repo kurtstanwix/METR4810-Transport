@@ -353,14 +353,14 @@ void wait_for_connection(void) {
             //get_bt_state(false);
             TMR1_Delay_ms(100);
         }
-        get_connected_device_name();
         // Need to decide if an exact hostname is required, or the base (first part)
         // matching is fine, allowing for suffixes to distinguish different controllers
         // Uncomment an combine the following to one if, if an exact match is needed
         /*
         if ((atRxBuffer.tail - atRxBuffer.buffer - 2) == controllerHostName.length)
          */
-        if (compare_strings(atRxBuffer.buffer, controllerHostName.part, controllerHostName.length)) {
+        if (get_connected_device_name() &&
+                compare_strings(atRxBuffer.buffer, controllerHostName.part, controllerHostName.length)) {
             break;
         }
         print_debug("Host Name Incorrect: ", 21);

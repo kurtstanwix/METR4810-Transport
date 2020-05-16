@@ -1,23 +1,23 @@
 /**
-  @Generated PIC24 / dsPIC33 / PIC32MM MCUs Header File
+  TMR2 Generated Driver API Header File 
 
-  @Company:
+  @Company
     Microchip Technology Inc.
 
-  @File Name:
-    mcc.h
+  @File Name
+    tmr2.h
 
-  @Summary:
-    This is the mcc.h file generated using PIC24 / dsPIC33 / PIC32MM MCUs
+  @Summary
+    This is the generated header file for the TMR2 driver using PIC24 / dsPIC33 / PIC32MM MCUs
 
-  @Description:
-    This header file provides implementations for driver APIs for all modules selected in the GUI.
-    Generation Information :
+  @Description
+    This header file provides APIs for driver for TMR2. 
+    Generation Information : 
         Product Revision  :  PIC24 / dsPIC33 / PIC32MM MCUs - 1.166.1
         Device            :  PIC24FV16KA301
     The generated drivers are tested against the following:
         Compiler          :  XC16 v1.41
-        MPLAB             :  MPLAB X v5.30
+        MPLAB 	          :  MPLAB X v5.30
 */
 
 /*
@@ -42,43 +42,46 @@
     TERMS.
 */
 
-#ifndef MCC_H
-#define	MCC_H
-#include <xc.h>
-#include "system.h"
-#include "clock.h"
-#include "pin_manager.h"
-#include <stdint.h>
-#include <stdbool.h>
-#include "uart1.h"
-#include "tmr3.h"
-#include "tmr2.h"
-#include "tmr5.h"
-#include "tmr4.h"
-#include "uart2.h"
-#include "interrupt_manager.h"
-#include "traps.h"
-#include "tmr1.h"
-
-#ifndef _XTAL_FREQ
-#define _XTAL_FREQ  32000000UL
-#endif
+#ifndef _TWO_TIMERS_PWM_H
+#define _TWO_TIMERS_PWM_H
 
 /**
- * @Param
-    none
- * @Returns
-    none
- * @Description
-    Initializes the oscillator to the default states configured in the
- *                  MCC GUI
- * @Example
-    OSCILLATOR_Initialize(void);
- */
-void OSCILLATOR_Initialize(void) __attribute__((deprecated ("\nThis will be removed in future MCC releases. \nUse CLOCK_Initialize (void) instead. ")));
+  Section: Included Files
+*/
+
+#include <xc.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 
-#endif	/* MCC_H */
+
+#ifndef PWM_TMR_WRAPPER
+#define PWM_TMR_WRAPPER(NUM, FUNC) TMR ## NUM ## _ ## FUNC
+#endif
+#ifndef PWM_TMR_WRAPPER2
+#define PWM_TMR_WRAPPER2(NUM, FUNC) PWM_TMR_WRAPPER(NUM, FUNC)
+#endif
+
+#define TWO_TIMERS_PWM_PERIOD_TMR 5
+#define TWO_TIMERS_PWM_DUTY_TMR 4
+#define Two_Timers_PWM_Period_TMR_Function(FUNCTION) PWM_TMR_WRAPPER2(TWO_TIMERS_PWM_PERIOD_TMR, FUNCTION)
+#define Two_Timers_PWM_Duty_TMR_Function(FUNCTION) PWM_TMR_WRAPPER2(TWO_TIMERS_PWM_DUTY_TMR, FUNCTION)
+
+
+/**
+  Section: Interface Routines
+*/
+void Two_Timers_PWM_Enable(void);
+void Two_Timers_PWM_Disable(void);
+
+void Two_Timers_PWM_Period_Set(uint16_t period);
+void Two_Timers_PWM_Duty_Cycle_Set(uint8_t percent);
+
+void Two_Timers_PWM_Initialise(void);
+
+
+#endif //_TMR2_H
+    
 /**
  End of File
 */

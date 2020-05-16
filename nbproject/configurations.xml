@@ -14,11 +14,12 @@
         <itemPath>mcc_generated_files/mcc.h</itemPath>
         <itemPath>mcc_generated_files/system.h</itemPath>
         <itemPath>mcc_generated_files/uart1.h</itemPath>
-        <itemPath>mcc_generated_files/oc2.h</itemPath>
         <itemPath>mcc_generated_files/tmr2.h</itemPath>
         <itemPath>mcc_generated_files/pin_manager.h</itemPath>
         <itemPath>mcc_generated_files/uart2.h</itemPath>
         <itemPath>mcc_generated_files/tmr3.h</itemPath>
+        <itemPath>mcc_generated_files/tmr4.h</itemPath>
+        <itemPath>mcc_generated_files/tmr5.h</itemPath>
       </logicalFolder>
       <itemPath>buffer.h</itemPath>
       <itemPath>uart_manager.h</itemPath>
@@ -26,6 +27,8 @@
       <itemPath>util.h</itemPath>
       <itemPath>software_PWM.h</itemPath>
       <itemPath>hardware_PWM.h</itemPath>
+      <itemPath>two_timers_PWM.h</itemPath>
+      <itemPath>one_timer_PWM.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -43,12 +46,13 @@
         <itemPath>mcc_generated_files/traps.c</itemPath>
         <itemPath>mcc_generated_files/interrupt_manager.c</itemPath>
         <itemPath>mcc_generated_files/mcc.c</itemPath>
-        <itemPath>mcc_generated_files/oc2.c</itemPath>
         <itemPath>mcc_generated_files/uart1.c</itemPath>
         <itemPath>mcc_generated_files/tmr2.c</itemPath>
         <itemPath>mcc_generated_files/pin_manager.c</itemPath>
         <itemPath>mcc_generated_files/uart2.c</itemPath>
         <itemPath>mcc_generated_files/tmr3.c</itemPath>
+        <itemPath>mcc_generated_files/tmr4.c</itemPath>
+        <itemPath>mcc_generated_files/tmr5.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>at_control.c</itemPath>
@@ -58,6 +62,8 @@
       <itemPath>mcc_generated_files/ms_delay.c</itemPath>
       <itemPath>software_PWM.c</itemPath>
       <itemPath>hardware_PWM.c</itemPath>
+      <itemPath>two_timers_PWM.c</itemPath>
+      <itemPath>one_timer_PWM.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

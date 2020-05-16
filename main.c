@@ -42,7 +42,6 @@
     TERMS.
 */
 
-#define __USER_CONTROL
 /**
   Section: Included Files
 */
@@ -59,9 +58,14 @@
 #include "at_control.h"
 #include "uart_manager.h"
 #include "util.h"
+//#include "two_timers_PWM.h"
+//#include "one_timer_PWM.h"
 //#include "software_PWM.h"
 #include "hardware_PWM.h"
 
+#ifdef __USER_DEBUG
+#define __USER_CONTROL
+#endif
 /*
 void delayUs(uint32_t delay_in_ms) {
      uint32_t tWait = ( GetSystemClock() / 2000 ) * delay_in_ms;
@@ -115,8 +119,7 @@ void delayUs(uint32_t delay_in_ms) {
 
 
 
-int main(void)
-{
+int main(void) {
     // initialize the device
     SYSTEM_Initialize();
     
@@ -131,68 +134,18 @@ int main(void)
     
     uint8_t data = 0;
     uint8_t rxStatus = UART_RX_STATUS_MORE;
-    
-    /*
-    Software_PWM_Period_Set(0, 10000);
-    Software_PWM_Period_Set(1, 20000);
-    Software_PWM_Period_Set(2, 10000);
-    Software_PWM_Period_Set(3, 10000);
-    // Duty Cycles to 100%
-    Software_PWM_Duty_Cycle_Set(0, 1000);
-    Software_PWM_Duty_Cycle_Set(1, 1000);
-    Software_PWM_Duty_Cycle_Set(2, 1000);
-    Software_PWM_Duty_Cycle_Set(3, 1000);
-    
-    Software_PWM_Disable(0);
-    Software_PWM_Disable(1);
-    Software_PWM_Disable(2);
-    Software_PWM_Disable(3);
-    
-    
-    Software_PWM_Period_Set(4,200);
-    Software_PWM_Duty_Cycle_Set(4,41);
-    Software_PWM_Enable(4);
-     * */
-    uint16_t dutyCycle = 1;
-    
-    
-    
-    
+        
     PC_CLEAR_RX_BUFFER();
     PC_CLEAR_TX_BUFFER();
     uint8_t sendCommandTo = PC_UART_NUM;
     
-    Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, 20000);
-    Hardware_PWM_Period_Set_us(HARDWARE_PWM2_OC_NUM, 20000);
-    Hardware_PWM_Enable();
-    Hardware_PWM_Start(HARDWARE_PWM1_OC_NUM);
-    Hardware_PWM_Start(HARDWARE_PWM2_OC_NUM);
+    init_bluetooth();
     
-    //init_bluetooth();
-    uint8_t state = BT_STATE_INVALID;
     print_debug("Waiting for connection...\r\n", 27);
-    //wait_for_connection();
+    wait_for_connection();
     print_debug("Connected\r\n", 11);
-    while (1)
-    {
-        
-        if (dutyCycle > 1000) {
-            dutyCycle = 1;
-        }
-        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, dutyCycle);
-        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM2_OC_NUM, 1001 - dutyCycle);
-        IO_RA3_SetPin(1);
-        TMR1_Delay_ms(100);
-        IO_RA3_SetPin(0);
-        dutyCycle+=1;
-        /*
-        Software_PWM_Duty_Cycle_Set(4,dutyCycle);
-        IO_RA3_SetPin(1);
-        TMR1_Delay_ms(500);
-        IO_RA3_SetPin(0);
-        dutyCycle+=10;
-        */
-        /*
+    
+    while (1) {        
        if (!BT_IS_CONNECTED()) {
             print_debug("Lost Connection\n\rReconnecting...\r\n", 34);
             wait_for_connection();
@@ -239,7 +192,7 @@ int main(void)
                         
                         
                         sendCommandTo = PC_UART_NUM;
-                        *
+                        */
                     } else {
                         print_debug(commandBuffer.buffer, commandBuffer.tail - commandBuffer.buffer);
                     }
@@ -263,46 +216,105 @@ int main(void)
             print_debug(packetBuffer.buffer, packetBuffer.tail - packetBuffer.buffer);
             packetBuffer.tail = packetBuffer.buffer;
         }
-        */
-        /*
-        TMR1_Delay_ms(1000);
-        if (state) {
-            Software_PWM_Disable(0);
-            state = 0;
-        } else {
-            Software_PWM_Enable(0);
-            state = 1;
-        }
-        /*
-        if (brightness > 100) {
-            brightness = 0;
-        }
-        //OC2_PWMPulseWidthSet(1000000);
-        
-        if (state == 0 && count >= 3) {
-            Software_PWM_Period_Set(1, 500UL);
-            state = 1;
-        } else if (state == 1 && count >= 6) {
-            Software_PWM_Period_Set(1, 1000UL);
-            state = 2;
-        } else if (state == 2 && count >= 9) {
-            Software_PWM_Period_Set(1, 1500UL);
-            state = 3;
-        } else if (state == 3 && count >= 12) {
-            Software_PWM_Period_Set(1, 2000UL);
-            state = 0;
-            count = 0;
-        }
-        //OC2_PWMDutyCycleSet(brightness);
-        __delay_ms(1000);
-        brightness += 10;
-        count++;
-        //IO_RA2_Toggle();
-        */
     }
 
     return 1;
 }
+
+////////////////////////////////////////////////////
+// HARDWARE PWM TEST
+////////////////////////////////////////////////////
+/*
+int main(void) {
+    // initialize the device
+    PIN_MANAGER_Initialize();
+    INTERRUPT_Initialize();
+    CLOCK_Initialize();
+    Hardware_PWM_Initialise();
+    
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, 20000);
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM2_OC_NUM, 20000);
+    Hardware_PWM_Enable(); // Start the hardware PWM timer
+    Hardware_PWM_Start(HARDWARE_PWM1_OC_NUM);
+    Hardware_PWM_Start(HARDWARE_PWM2_OC_NUM);
+    
+    uint16_t dutyCycle = 1;
+    
+    while (1) {
+        if (dutyCycle > 1000) {
+            dutyCycle = 1;
+        }
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, dutyCycle);
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM2_OC_NUM, 1001 - dutyCycle);
+        IO_RA3_SetPin(1);
+        TMR1_Delay_ms(100);
+        IO_RA3_SetPin(0);
+        dutyCycle+=1;
+}
+*/
+
+////////////////////////////////////////////////////
+// SOFTWARE PWM TEST
+////////////////////////////////////////////////////
+/*
+int main(void) {
+    // initialize the device
+    PIN_MANAGER_Initialize();
+    INTERRUPT_Initialize();
+    CLOCK_Initialize();
+    Software_PWM_Initialize();
+    
+    Software_PWM_Period_Set(4,20000);
+    Software_PWM_Duty_Cycle_Set(4,100);
+    Software_PWM_Disable(4);
+    Software_PWM_Enable(0);
+    Software_PWM_Start();
+    
+    uint16_t dutyCycle = 1;
+    
+    while (1) {
+        Software_PWM_Duty_Cycle_Set(4,dutyCycle);
+        IO_RA3_SetPin(1);
+        TMR1_Delay_ms(500);
+        IO_RA3_SetPin(0);
+        dutyCycle+=10;
+        if (dutyCycle > 100) {
+            dutyCycle = 1;
+        }
+    }
+}
+*/
+
+////////////////////////////////////////////////////
+// TWO TIMER PWM TEST
+////////////////////////////////////////////////////
+/*
+int main(void) {
+    // initialize the device
+    PIN_MANAGER_Initialize();
+    INTERRUPT_Initialize();
+    CLOCK_Initialize();
+    Two_Timers_PWM_Initialise();
+    
+    Two_Timers_PWM_Period_Set(100);
+    Two_Timers_PWM_Duty_Cycle_Set(1);
+    Two_Timers_PWM_Enable();
+    
+    uint16_t dutyCycle = 1;
+    
+    while (1) {
+        Two_Timers_PWM_Duty_Cycle_Set(dutyCycle);
+        IO_RA3_SetPin(1);
+        TMR1_Delay_ms(100);
+        IO_RA3_SetPin(0);
+        dutyCycle+=1;
+        
+        if (dutyCycle > 100) {
+            dutyCycle = 1;
+        }
+    }
+}
+*/
 /**
  End of File
 */

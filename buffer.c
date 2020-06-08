@@ -1,9 +1,3 @@
-/*
- * File:   buffer.c
- * Author: Kurt
- *
- * Created on April 12, 2020, 9:05 AM
- */
 #include "buffer.h"
 
 void init_buffer(BUFFER_OBJ *buffer, uint8_t size) {

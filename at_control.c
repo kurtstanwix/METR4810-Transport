@@ -1,5 +1,5 @@
 #include "at_control.h"
-#include "mcc_generated_files/tmr1.h"
+#include "ms_timer.h"
 #include "mcc_generated_files/tmr2.h"
 #include "uart_manager.h"
 #include "util.h"
@@ -8,17 +8,21 @@
 /////////////////////////////////////
 // private defines
 /////////////////////////////////////
-#define AT_LENGTH (128+2)
+#define AT_LENGTH (128+2) // bytes + \r\n
 
 #define NAP_ADDR_LENGTH 4
 #define UAP_ADDR_LENGTH 2
 #define LAP_ADDR_LENGTH 6
-#define FORMATTED_ADDR_LENGTH 14
+#define FORMATTED_ADDR_LENGTH 14 // Sum of above plus seperators
 /////////////////////////////////////
 
 /////////////////////////////////////
 // private types
 /////////////////////////////////////
+
+/* Describes a MAC address as used by HC-05. Each part is represented by a
+ * hexdecimal digit of lengths defined above.
+ */
 typedef struct _ADDRESS {
     uint8_t nap[NAP_ADDR_LENGTH];
     uint8_t uap[UAP_ADDR_LENGTH];
@@ -42,23 +46,26 @@ bool is_valid_address(ADDRESS address);
 /////////////////////////////////////
 // private variables
 /////////////////////////////////////
-BUFFER_OBJ atTxBuffer;
-BUFFER_OBJ atRxBuffer;
+BUFFER_OBJ atTxBuffer; // Buffer to be used for sending
+BUFFER_OBJ atRxBuffer; // Buffer to be used for receiving
 
-
+// This device's friendly Bluetooth name
 const AT_COMMAND_PART deviceName = {"TRANSPORT", 9};
+// Host/Controller's friendly Bluetooth name
 const AT_COMMAND_PART controllerHostName = {"KURT-PC", 7};
-ADDRESS hostAddress;
+// Host/Controller's Bluetooth MAC address
+ADDRESS controllerHostAddr;
 /////////////////////////////////////
 
 /////////////////////////////////////
 // external variables
 /////////////////////////////////////
+/* AT commands recognised by HC-05
+ */
 const AT_COMMAND_PART atCommands[] = {
     {"", 0},
     {"+RESET", 6},
     {"+ORGL", 5},
-    //AT_COMMAND_ADDR,
     {"+NAME", 5},
     {"+RNAME", 6},
     {"+ROLE", 5},
@@ -72,15 +79,19 @@ const AT_COMMAND_PART atCommands[] = {
     {"+DISC", 5}
 };
 
+/* AT commands seperators
+ */
 const AT_COMMAND_PART atCommandDividers[] = {
-    {"AT", 2},
-    {"?", 1},
-    {"=", 1},
-    {":", 1},
-    {":", 1},
-    {",", 1}
+    {"AT", 2}, // Command prefix
+    {"?", 1}, // Query command
+    {"=", 1}, // Set command
+    {":", 1}, // Query response
+    {":", 1}, // MAC address seperator
+    {",", 1} // Parameter seperator
 };
 
+/* States the HC-05 can be in, and responses to a AT+STATE? command
+ */
 const AT_COMMAND_PART atStates[] = {
     {"INITIALIZED", 11},
     {"PAIRABLE", 8},
@@ -88,32 +99,41 @@ const AT_COMMAND_PART atStates[] = {
     {"DISCONNECTED", 12}
 };
 
+/* Different roles HC-05 can be in, either Slave or Master (or hybrid but only
+ * relevant for debugging)
+ */
 const AT_COMMAND_PART btRoles[] = {
-    {"0", 1},
+    {"0", 1}, // 
     {"1", 1}
 };
 
+/**
+ * Initialise the HC-05 into a state ready to receive a connection from the
+ * Controller. Will clear any paired devices and reset the friendly name.
+ */
 void init_bluetooth(void) {
     ////////
-    // AT+ORGL\r\n
-    // AT+UART=9600,1,0\r\n
+    // Send these commands:
+    // AT+ORGL
+    // AT+UART=9600,1,0
     // AT+NAME=TRANSPORT
     // AT+INQM=0,10,4
     // AT+CMODE=1
-    TMR1_Delay_ms(1000); // Wait for bluetooth to boot before restarting
+    ////////
+    MS_TIMER_Delay_ms(1000); // Wait for bluetooth to boot before restarting
     init_buffer(&atRxBuffer, AT_LENGTH);
     init_buffer(&atTxBuffer, AT_LENGTH);
     
     AT_PIN_Set();
     AT_COMMAND_PART params;
-    TMR1_Delay_ms(100);
-    // Set to original settings
+    MS_TIMER_Delay_ms(100);
+    // Set to original manufacturer settings
     create_command(&atTxBuffer, true, atCommands[AT_COMMAND_ORGL_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX]);
     copy_to_buffer(&atTxBuffer, "AT+ORGL\r\n", 9, true);
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-    TMR1_Delay_ms(400);
+    MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
     
     // UART with 9600 BAUD, 1 stop bit and 0 parity bits
@@ -123,7 +143,7 @@ void init_bluetooth(void) {
             atCommandDividers[AT_COMMAND_SET_CHAR_INDEX],
             params);
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-    TMR1_Delay_ms(400);
+    MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
     
     // Set the device's friendly visible bluetooth name
@@ -131,7 +151,7 @@ void init_bluetooth(void) {
             atCommandDividers[AT_COMMAND_SET_CHAR_INDEX],
             deviceName);
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-    TMR1_Delay_ms(400);
+    MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
     
     // Standard inquiry mode, max 10 bluetooth devices to inquire
@@ -142,7 +162,7 @@ void init_bluetooth(void) {
             atCommandDividers[AT_COMMAND_SET_CHAR_INDEX],
             params);
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-    TMR1_Delay_ms(400);
+    MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
     
     // Module will connect to any address
@@ -152,7 +172,7 @@ void init_bluetooth(void) {
             atCommandDividers[AT_COMMAND_SET_CHAR_INDEX],
             params);
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-    TMR1_Delay_ms(400);
+    MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
     
     // Remove all authenticated devices
@@ -160,12 +180,18 @@ void init_bluetooth(void) {
             atCommands[AT_COMMAND_BLANK_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX]);
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-    TMR1_Delay_ms(400);
+    MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
 }
 
-// Checks if buffer contains an AT State response, if it does, returns true and
-// sets the buffers tail to the begining of the response
+/**
+ * Checks if buffer contains an AT State response, if it does, returns true and
+ * sets the buffers tail to the begining of the response.
+ * @param buffer : Buffer to with data to check if it contains an AT+STATE
+ * response.
+ * @return true if buffer contains a response to an AT+STATE command, false
+ * otherwise.
+ */
 uint8_t is_state_response(BUFFER_OBJ *buffer) {
     if (compare_strings(buffer->buffer, \
                 atCommands[AT_COMMAND_STATE_INDEX].part, \
@@ -173,6 +199,8 @@ uint8_t is_state_response(BUFFER_OBJ *buffer) {
             compare_strings(buffer->buffer + atCommands[AT_COMMAND_STATE_INDEX].length, \
                     atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].part, \
                     atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length)) {
+        
+        // Set tail position to the start of the state response
         buffer->tail = buffer->buffer + \
                 atCommands[AT_COMMAND_STATE_INDEX].length + \
                 atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length;
@@ -181,15 +209,20 @@ uint8_t is_state_response(BUFFER_OBJ *buffer) {
     return false;
 }
 
-// Determines which state string
+/**
+ * Determines which state is contained in the buffer
+ * @param buffer : buffer with tail pointing to start of state string
+ * @return true if buffer contains a valid state
+ */
 uint8_t extract_state(BUFFER_OBJ *buffer) {
     uint8_t i;
-    uint8_t numStates = sizeof atStates / sizeof atStates[0];
+    // 32 bit divide by 16 bit instruction as much quicker than compiled divide
+    uint8_t numStates = __builtin_divsd(sizeof atStates, sizeof atStates[0]);
     for (i = 0; i < numStates; i++) {
         if (compare_strings(buffer->tail, atStates[i].part, atStates[i].length)) {
-            copy_to_buffer(buffer, atStates[i].part, atStates[i].length, true);
-            copy_to_buffer(buffer, "\r\n", 2, false);
-            send_buffer(buffer, PC_UART_NUM, true);
+            
+            // print the state
+            print_debug(atStates[i].part + "\r\n", true);
             
             return i;
         }
@@ -197,32 +230,30 @@ uint8_t extract_state(BUFFER_OBJ *buffer) {
     return BT_STATE_INVALID; // Not a valid state
 }
 
-// Returns the state of the bluetooth module
-// atModeOnExit: if true, leaves the module in AT mode
+// 
+// atModeOnExit: 
+/**
+ * Queries and returns the state code of the bluetooth module.
+ * @param atModeOnExit : if true, leaves the module in AT command mode on return
+ * @return The state code the module is in
+ */
 uint8_t get_bt_state(bool atModeOnExit) {
     uint8_t rxStatus;
     while (true) {
-        copy_to_buffer(&atTxBuffer,
-                atCommandDividers[AT_COMMAND_PREFIX_INDEX].part,
-                atCommandDividers[AT_COMMAND_PREFIX_INDEX].length,
-                true);
-        copy_to_buffer(&atTxBuffer,
-                atCommands[AT_COMMAND_STATE_INDEX].part,
-                atCommands[AT_COMMAND_STATE_INDEX].length,
-                false);
-        copy_to_buffer(&atTxBuffer,
-                "\r\n",
-                2,
-                false);
+        // Create a state query command
+        create_command(&atTxBuffer, true, atCommands[AT_COMMAND_STATE_INDEX],
+                atCommandDividers[AT_COMMAND_QUERY_CHAR_INDEX],
+                atCommands[AT_COMMAND_BLANK_INDEX]);
         BLUETOOTH_CLEAR_RX_BUFFER();
         AT_PIN_Set();
-        TMR1_Delay_ms(100);
+        MS_TIMER_Delay_ms(100);
         
-        //send_buffer(&atTxBuffer, PC_UART_NUM, false);
         send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-        atRxBuffer.tail = atRxBuffer.buffer;
+        atRxBuffer.tail = atRxBuffer.buffer; // Reset Rx buffer
         rxStatus = read_line_to_buffer(&atRxBuffer, BLUETOOTH_UART_NUM, 100);
         if (rxStatus == UART_READ_LINE_NOTHING) {
+            // Didn't get a response, possibly in comms mode; cycle pin and try
+            // again
             AT_PIN_Clear();
             continue;
         }
@@ -236,21 +267,27 @@ uint8_t get_bt_state(bool atModeOnExit) {
     }
 }
 
-// Reset the bluetooth module and exit AT mode
+/**
+ * Reset the bluetooth module and exit AT mode
+ */
 void reset_bluetooth(void) {
     AT_PIN_Set();
     create_reset(&atTxBuffer);
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-    TMR1_Delay_ms(100);
+    MS_TIMER_Delay_ms(100);
     AT_PIN_Clear();
     BLUETOOTH_CLEAR_RX_BUFFER();
 }
 
+/**
+ * 
+ * @return 
+ */
 bool get_connected_device_name(void) {
     AT_PIN_Clear(); // Clear then set to ensure in AT mode
-    TMR1_Delay_ms(100);
+    MS_TIMER_Delay_ms(100);
     AT_PIN_Set();
-    TMR1_Delay_ms(100);
+    MS_TIMER_Delay_ms(100);
     
     uint8_t attempts = 0; // Get address may fail, keep track of how many tries
     while (true) {
@@ -283,10 +320,10 @@ bool get_connected_device_name(void) {
             }
         }
         // Got an MRAD response, make sure the address is valid
-        extract_address(&hostAddress, atRxBuffer.buffer + \
+        extract_address(&controllerHostAddr, atRxBuffer.buffer + \
                 atCommands[AT_COMMAND_MRAD_INDEX].length + \
                 atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length);
-        if (!is_valid_address(hostAddress)) {
+        if (!is_valid_address(controllerHostAddr)) {
             // Was a valid MRAD response, but address provided was invalid
             if (++attempts == 10) {
                 return false;
@@ -298,10 +335,10 @@ bool get_connected_device_name(void) {
     }
     attempts = 0; // Get name may fail, reset to keep track of how many tries
     // Reformats received address into a valid argument format
-    format_address(&hostAddress, AT_COMMAND_PARAM_SEPERATOR_CHAR_INDEX);
+    format_address(&controllerHostAddr, AT_COMMAND_PARAM_SEPERATOR_CHAR_INDEX);
     while (true) {
         // Turns the address into a command argument
-        AT_COMMAND_PART tempAddr = {hostAddress.formatted, FORMATTED_ADDR_LENGTH};
+        AT_COMMAND_PART tempAddr = {controllerHostAddr.formatted, FORMATTED_ADDR_LENGTH};
         // Command to get the friendly name of a device, RNAME
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_RNAME_INDEX],
                 atCommandDividers[AT_COMMAND_QUERY_CHAR_INDEX],
@@ -351,7 +388,7 @@ void wait_for_connection(void) {
         while (!BT_IS_CONNECTED()) { // Pin will be high when connected
             AT_PIN_Clear();
             //get_bt_state(false);
-            TMR1_Delay_ms(100);
+            MS_TIMER_Delay_ms(100);
         }
         // Need to decide if an exact hostname is required, or the base (first part)
         // matching is fine, allowing for suffixes to distinguish different controllers
@@ -371,7 +408,7 @@ void wait_for_connection(void) {
             atCommands[AT_COMMAND_BLANK_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX]);
         send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
-        TMR1_Delay_ms(100);
+        MS_TIMER_Delay_ms(100);
         AT_PIN_Clear();
         //TMR1_Delay_ms(400);
         BLUETOOTH_CLEAR_RX_BUFFER();

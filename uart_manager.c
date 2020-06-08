@@ -1,20 +1,7 @@
-/*
- * File:   uart_manager.c
- * Author: Kurt
- *
- * Created on April 12, 2020, 9:22 AM
- */
-
 #include "mcc_generated_files/tmr2.h"
-#include "mcc_generated_files/tmr1.h"
+#include "ms_timer.h"
 #include "uart_manager.h"
 #include "mcc_generated_files/pin_manager.h"
-
-/*
-typedef struct _UART_OBJ {
-    void (*initialize)(void);
-} UART_OBJ;
-*/
 
 void UART_Initialise(void) {
 #ifdef BLUETOOTH_UART_NUM
@@ -30,11 +17,8 @@ void UART_Initialise(void) {
 #define PC_UART_RX_LED_SetPin(STATE) IO_RB14_SetPin(STATE)
 #define PC_UART_TX_LED_SetPin(STATE) IO_RB15_SetPin(STATE)
 
-
-
-// Read a given uart byte into the buffer
 /**
- * Read a byte into the UART buffer
+ * Read a byte from the UART into the buffer
  * @param buffer
  * @param uartNum
  * @return 
@@ -49,7 +33,8 @@ uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum) {
         *(buffer->tail) = uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_READ() : PC_READ();
         buffer->tail++;
         if (*(buffer->tail - 1) == '\n') {
-            Software_PWM_Disable((uartNum - 1) * 2);
+            uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_OFF) :
+                PC_UART_RX_LED_SetPin(PIN_STATE_OFF); // Receiving LED
             return UART_RX_STATUS_EOL;
         } else { // Only \r received, remove it
             *(buffer->tail - 2) = *(buffer->tail - 1);
@@ -60,7 +45,8 @@ uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum) {
         // Maximum size of buffer reached without receiving \r\n
         *(buffer->tail++) = '\r';
         *(buffer->tail++) = '\n';
-        Software_PWM_Disable((uartNum - 1) * 2);
+        uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_OFF) :
+            PC_UART_RX_LED_SetPin(PIN_STATE_OFF); // Receiving LED
         return UART_RX_STATUS_BF;
         //send_buffer(&packetBuffer, PC_UART_NUM, true);
     }
@@ -69,7 +55,6 @@ uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum) {
     return UART_RX_STATUS_MORE;
 }
 
-// timeout = 0 for no time out
 /**
  * Reads a \r\n terminated line from the specified UART. Upon return, any read
  * data will be stored in buffer with the return indicating the state of the
@@ -91,7 +76,7 @@ uint8_t read_line_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint16_t timeou
     uint16_t elapsed = 0;
     while (true) {
         if (!(uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_RX_READY() : PC_RX_READY())) {
-            TMR1_Delay_ms(1);
+            MS_TIMER_Delay_ms(1);
             elapsed++;
             if (timeout && elapsed >= timeout) {
                 break;
@@ -110,7 +95,7 @@ uint8_t read_line_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint16_t timeou
     return status;
 }
 
-// Send the buffer contents to the specified 
+// Send the buffer contents to the specified uartNum
 void send_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, bool clearBuffer) {
     uint8_t *sendPos = buffer->buffer;
     uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_TX_LED_SetPin(PIN_STATE_ON) :

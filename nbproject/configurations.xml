@@ -8,7 +8,6 @@
                      displayName="MCC Generated Files"
                      projectFiles="true">
         <itemPath>mcc_generated_files/interrupt_manager.h</itemPath>
-        <itemPath>mcc_generated_files/tmr1.h</itemPath>
         <itemPath>mcc_generated_files/clock.h</itemPath>
         <itemPath>mcc_generated_files/traps.h</itemPath>
         <itemPath>mcc_generated_files/mcc.h</itemPath>
@@ -29,6 +28,8 @@
       <itemPath>hardware_PWM.h</itemPath>
       <itemPath>two_timers_PWM.h</itemPath>
       <itemPath>one_timer_PWM.h</itemPath>
+      <itemPath>ms_timer.h</itemPath>
+      <itemPath>motor_encoder.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -40,7 +41,6 @@
       <logicalFolder name="MCC Generated Files"
                      displayName="MCC Generated Files"
                      projectFiles="true">
-        <itemPath>mcc_generated_files/tmr1.c</itemPath>
         <itemPath>mcc_generated_files/system.c</itemPath>
         <itemPath>mcc_generated_files/clock.c</itemPath>
         <itemPath>mcc_generated_files/traps.c</itemPath>
@@ -59,11 +59,12 @@
       <itemPath>buffer.c</itemPath>
       <itemPath>uart_manager.c</itemPath>
       <itemPath>util.c</itemPath>
-      <itemPath>mcc_generated_files/ms_delay.c</itemPath>
       <itemPath>software_PWM.c</itemPath>
       <itemPath>hardware_PWM.c</itemPath>
       <itemPath>two_timers_PWM.c</itemPath>
       <itemPath>one_timer_PWM.c</itemPath>
+      <itemPath>ms_timer.c</itemPath>
+      <itemPath>motor_encoder.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

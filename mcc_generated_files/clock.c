@@ -18,7 +18,7 @@
     The generated drivers are tested against the following:
         Compiler          :  XC16 v1.41
         MPLAB             :  MPLAB X v5.30
-*/
+ */
 
 /*
     (c) 2020 Microchip Technology Inc. and its subsidiaries. You may use this
@@ -40,14 +40,13 @@
 
     MICROCHIP PROVIDES THIS SOFTWARE CONDITIONALLY UPON YOUR ACCEPTANCE OF THESE
     TERMS.
-*/
+ */
 
 #include <stdint.h>
 #include "xc.h"
 #include "clock.h"
 
-void CLOCK_Initialize(void)
-{
+void CLOCK_Initialize(void) {
     // RCDIV FRC/1; DOZE 1:8; DOZEN disabled; ROI disabled; 
     CLKDIV = 0x3000;
     // TUN Center frequency; 

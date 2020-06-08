@@ -1,64 +1,10 @@
-
-/**
-  TMR2 Generated Driver API Source File 
-
-  @Company
-    Microchip Technology Inc.
-
-  @File Name
-    tmr2.c
-
-  @Summary
-    This is the generated source file for the TMR2 driver using PIC24 / dsPIC33 / PIC32MM MCUs
-
-  @Description
-    This source file provides APIs for driver for TMR2. 
-    Generation Information : 
-        Product Revision  :  PIC24 / dsPIC33 / PIC32MM MCUs - 1.166.1
-        Device            :  PIC24FV16KA301
-    The generated drivers are tested against the following:
-        Compiler          :  XC16 v1.41
-        MPLAB             :  MPLAB X v5.30
-*/
-
-/*
-    (c) 2020 Microchip Technology Inc. and its subsidiaries. You may use this
-    software and any derivatives exclusively with Microchip products.
-
-    THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER
-    EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY IMPLIED
-    WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
-    PARTICULAR PURPOSE, OR ITS INTERACTION WITH MICROCHIP PRODUCTS, COMBINATION
-    WITH ANY OTHER PRODUCTS, OR USE IN ANY APPLICATION.
-
-    IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE,
-    INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND
-    WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS
-    BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO THE
-    FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN
-    ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
-    THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
-
-    MICROCHIP PROVIDES THIS SOFTWARE CONDITIONALLY UPON YOUR ACCEPTANCE OF THESE
-    TERMS.
-*/
-
-/**
-  Section: Included Files
-*/
-
 #include <stdio.h>
 #include "software_PWM.h"
 #include "mcc_generated_files/pin_manager.h"
 #include "mcc_generated_files/tmr2.h"
+#include "util.h"
 
-/**
-  Section: Data Type Definitions
-*/
-
-
-typedef struct _SOFTWARE_PWM_STRUCT
-{
+typedef struct _SOFTWARE_PWM_STRUCT {
     volatile uint32_t count;
     // PWM period
     volatile uint32_t period;
@@ -74,36 +20,41 @@ typedef struct _SOFTWARE_PWM_STRUCT
 
 } PWM_OBJ;
 
-/**
- Section: File specific functions
-*/
-
 void Software_PWM_Reset_Obj(volatile PWM_OBJ *pwm);
 void Software_PWM_Duty_Cycle_Set_Obj(volatile PWM_OBJ *pwm, uint16_t dutyCycle);
 void Software_PWM_Period_Set_Obj(volatile PWM_OBJ *pwm, uint32_t period);
 
-void __attribute__ ((weak)) Software_PWM_Handler(void);
+void __attribute__((weak)) Software_PWM_Handler(void);
 
 
 
-#define NUM_PWM 1
+#define NUM_PWM 6
 volatile PWM_OBJ pwms[NUM_PWM];
 
 // Wrappers for the Pin toggle defs
+
 static void Software_PWM0_SetPin(uint8_t state) {
-    IO_RB4_SetPin(state);
-}
-static void Software_PWM1_SetPin(uint8_t state) {
     IO_RA2_SetPin(state);
 }
+
+static void Software_PWM1_SetPin(uint8_t state) {
+    IO_RA3_SetPin(state);
+}
+
 static void Software_PWM2_SetPin(uint8_t state) {
-    IO_RB15_SetPin(state);
+    IO_RB4_SetPin(state);
 }
+
 static void Software_PWM3_SetPin(uint8_t state) {
-    IO_RA4_SetPin(state);
+    IO_RB12_SetPin(state);
 }
+
 static void Software_PWM4_SetPin(uint8_t state) {
-    IO_RB13_SetPin(state);
+    IO_RB14_SetPin(state);
+}
+
+static void Software_PWM5_SetPin(uint8_t state) {
+    IO_RB15_SetPin(state);
 }
 
 /*
@@ -142,7 +93,7 @@ static void PWM4_Set(void) {
 static void PWM4_Clear(void) {
     IO_RA4_SetLow();
 }
-*/
+ */
 
 /*void Software_PWM_Initialise(PWM_OBJ *pwm, uint16_t period, uint8_t dutyCycle, void (*set), void (*clear)) {
     pwm->count = 0;
@@ -203,6 +154,7 @@ void Software_PWM_Reset_Obj(volatile PWM_OBJ *pwm) {
 }
 
 // Duty cycle in 1/10th of 1%: 1000 = 100%
+
 void Software_PWM_Duty_Cycle_Set_Obj(volatile PWM_OBJ *pwm, uint16_t dutyCycle) {
     pwm->highValue = (dutyCycle / 1000.0) * pwm->period;
     pwm->dutyCycle = dutyCycle;
@@ -210,6 +162,7 @@ void Software_PWM_Duty_Cycle_Set_Obj(volatile PWM_OBJ *pwm, uint16_t dutyCycle) 
         Software_PWM_Reset_Obj(pwm);
     }
 }
+
 void Software_PWM_Period_Set_Obj(volatile PWM_OBJ *pwm, uint32_t period) {
     pwm->period = period;
     // Recalculate timer value for same duty cycle with new period
@@ -219,20 +172,19 @@ void Software_PWM_Period_Set_Obj(volatile PWM_OBJ *pwm, uint32_t period) {
     }
 }
 
-
-
 /**
   Section: Driver Interface
-*/
+ */
 
-void Software_PWM_Initialize (void) {
+void Software_PWM_Initialize(void) {
     pwms[0] = Software_PWM_Create(10000, 500, &Software_PWM0_SetPin);
-    //pwms[1] = Software_PWM_Create(20000, 500, &Software_PWM1_SetPin);
-    //pwms[2] = Software_PWM_Create(10000, 500, &Software_PWM2_SetPin);
-    //pwms[3] = Software_PWM_Create(20000, 500, &Software_PWM3_SetPin);
-    //pwms[4] = Software_PWM_Create(10000, 500, &Software_PWM4_SetPin);
-    Software_PWM_TMR_Function(SetInterruptHandler(&Software_PWM_Handler));
-    Software_PWM_TMR_Function(Initialize());
+    pwms[1] = Software_PWM_Create(15000, 500, &Software_PWM1_SetPin);
+    pwms[2] = Software_PWM_Create(10000, 500, &Software_PWM2_SetPin);
+    pwms[3] = Software_PWM_Create(20000, 500, &Software_PWM3_SetPin);
+    pwms[4] = Software_PWM_Create(10000, 500, &Software_PWM4_SetPin);
+    pwms[5] = Software_PWM_Create(10000, 500, &Software_PWM5_SetPin);
+    TMR_FUNCTION(SOFTWARE_PWM_TMR, SetInterruptHandler(&Software_PWM_Handler));
+    TMR_FUNCTION(SOFTWARE_PWM_TMR, Initialize());
     //Software_PWM_Function(Start());
 }
 
@@ -254,37 +206,8 @@ void Software_PWM_Duty_Cycle_Set(uint8_t pwmIndex, uint16_t dutyCycle) {
     }
 }
 
-/*
-void TMR2_Period16BitSet( uint16_t value )
-{
-    /* Update the counter values *
-    PR2 = value;
-    /* Reset the status information *
-    tmr2_obj.timerElapsed = false;
-}
-
-uint16_t TMR2_Period16BitGet( void )
-{
-    return( PR2 );
-}
-
-void TMR2_Counter16BitSet ( uint16_t value )
-{
-    /* Update the counter values *
-    TMR2 = value;
-    /* Reset the status information *
-    tmr2_obj.timerElapsed = false;
-}
-
-uint16_t TMR2_Counter16BitGet( void )
-{
-    return( TMR2 );
-}
-*/
-
-void __attribute__ ((weak)) Software_PWM_Handler(void)
-{
-    IO_RA3_SetPin(1);
+void __attribute__((weak)) Software_PWM_Handler(void) {
+    IO_RA4_SetPin(1);
     uint8_t i;
     for (i = 0; i < NUM_PWM; i++) {
         if (pwms[i].enabled) {
@@ -303,41 +226,13 @@ void __attribute__ ((weak)) Software_PWM_Handler(void)
             }
         }
     }
-    IO_RA3_SetPin(0);
+    IO_RA4_SetPin(0);
 }
 
 void Software_PWM_Start(void) {
-    Software_PWM_TMR_Function(Start());
+    TMR_FUNCTION(SOFTWARE_PWM_TMR, Start());
 }
 
 void Software_PWM_Stop(void) {
-    Software_PWM_TMR_Function(Stop());
+    TMR_FUNCTION(SOFTWARE_PWM_TMR, Stop());
 }
-
-/*
-bool TMR2_GetElapsedThenClear(void)
-{
-    bool status;
-    
-    status = tmr2_obj.timerElapsed;
-
-    if(status == true)
-    {
-        tmr2_obj.timerElapsed = false;
-    }
-    return status;
-}
-
-int TMR2_SoftwareCounterGet(void)
-{
-    return tmr2_obj.count;
-}
-
-void TMR2_SoftwareCounterClear(void)
-{
-    tmr2_obj.count = 0; 
-}
-*/
-/**
- End of File
-*/

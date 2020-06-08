@@ -1,58 +1,10 @@
-/**
-  Generated main.c file from MPLAB Code Configurator
-
-  @Company
-    Microchip Technology Inc.
-
-  @File Name
-    main.c
-
-  @Summary
-    This is the generated main.c using PIC24 / dsPIC33 / PIC32MM MCUs.
-
-  @Description
-    This source file provides main entry point for system initialization and application code development.
-    Generation Information :
-        Product Revision  :  PIC24 / dsPIC33 / PIC32MM MCUs - 1.166.1
-        Device            :  PIC24FV16KA301
-    The generated drivers are tested against the following:
-        Compiler          :  XC16 v1.41
-        MPLAB 	          :  MPLAB X v5.30
-*/
-
-/*
-    (c) 2020 Microchip Technology Inc. and its subsidiaries. You may use this
-    software and any derivatives exclusively with Microchip products.
-
-    THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER
-    EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY IMPLIED
-    WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
-    PARTICULAR PURPOSE, OR ITS INTERACTION WITH MICROCHIP PRODUCTS, COMBINATION
-    WITH ANY OTHER PRODUCTS, OR USE IN ANY APPLICATION.
-
-    IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE,
-    INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND
-    WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS
-    BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO THE
-    FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN
-    ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
-    THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
-
-    MICROCHIP PROVIDES THIS SOFTWARE CONDITIONALLY UPON YOUR ACCEPTANCE OF THESE
-    TERMS.
-*/
-
-/**
-  Section: Included Files
-*/
 #include "mcc_generated_files/clock.h"
 #define FCY _XTAL_FREQ
 #include "mcc_generated_files/system.h"
 #include "mcc_generated_files/pin_manager.h"
 #include "mcc_generated_files/uart1.h"
 #include "mcc_generated_files/uart2.h"
-#include "mcc_generated_files/tmr1.h"
-#include "mcc_generated_files/tmr2.h"
+#include "mcc_generated_files/tmr3.h"
 #include "libpic30.h"
 #include <stdbool.h>
 #include "at_control.h"
@@ -62,6 +14,11 @@
 //#include "one_timer_PWM.h"
 //#include "software_PWM.h"
 #include "hardware_PWM.h"
+#include "motor_encoder.h"
+
+
+#include "mcc_generated_files/interrupt_manager.h"
+#include "ms_timer.h"
 
 #ifdef __USER_DEBUG
 #define __USER_CONTROL
@@ -111,14 +68,225 @@ void delayUs(uint32_t delay_in_ms) {
 
 
 
+/* 
+ * Encoder Counts Per Second to Linear Speed (nm/s) conversion factor:
+ * (REVS_TO_LINEAR * 1000000) / (GEAR_RATIO * COUNTS_PER_REV)
+ */
+#define ENCODER_TO_LINEAR 377595
+
+typedef struct PI {
+    int16_t kp;
+    int16_t ki;
+    int32_t sumError;
+    int32_t output;
+    int16_t target;
+    us_time_t lastTime;
+} PI_OBJ;
+
+PI_OBJ motor1;
+
+// kp and ki must be multiplied by 1000
+void PI_init(PI_OBJ *pi, uint16_t kp, uint16_t ki) {
+    pi->kp = kp;
+    pi->ki = ki;
+    pi->sumError = 0;
+    pi->lastTime = 0;
+    pi->target = 0;
+}
+
+int32_t error;
+
+bool PI_compute(PI_OBJ *pi, int16_t input) {
+    us_time_t currentTime = MS_TIMER_get_time_us();
+    int32_t elapsed = currentTime - pi->lastTime;
+    
+    error = pi->target - input;
+    pi->sumError += pi->ki * ((error * elapsed) / 1000);
+    
+    pi->output = pi->kp * error + pi->sumError;
+    if (pi->output > 1000000) {
+        pi->sumError -= pi->output - 1000000;
+        pi->output = 1000000;
+    } else if (pi->output < -1000000) {
+        pi->sumError += -1000000 - pi->output;
+        pi->output = -1000000;
+    }
+    
+    pi->lastTime = currentTime;
+}
+#define MAX_PERIOD 32768
+/*
+int main(void) {
+    PIN_MANAGER_Initialize();
+    INTERRUPT_Initialize();
+    CLOCK_Initialize();
+    UART_Initialise();
+    Hardware_PWM_Initialise();
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, 100000);
+    Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, 500);
+    Hardware_PWM_Enable(); // Start the hardware PWM timer
+    Hardware_PWM_Start(HARDWARE_PWM1_OC_NUM);
+    MS_TIMER_Initialize();
+    Encoder_Initialise();
+    init_debug();
+    
+    PI_init(&motor1, 50, 50);
+    
+    int32_t pos;
+    int32_t err;
+    char position[21] = "Position:          \r\n";
+    char errorst[18] = "Error:          \r\n";
+    uint8_t i;
+    motor1.target = 2648;
+    uint16_t temp;
+    while (1) {
+        pos = Encoder_1_get_position();
+        PI_compute(&motor1, pos);
+        temp = (((1000000 - motor1.output) / 1000) * MAX_PERIOD)  / 1000;
+        Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, temp);
+        if (motor1.output == 0)
+        position[18] = 0;
+        position[17] = 0;
+        position[16] = 0;
+        position[15] = 0;
+        position[14] = 0;
+        position[13] = 0;
+        position[12] = 0;
+        position[11] = 0;
+        position[10] = 0;
+        position[9] = 0;
+        
+        errorst[15] = 0;
+        errorst[14] = 0;
+        errorst[13] = 0;
+        errorst[12] = 0;
+        errorst[11] = 0;
+        errorst[10] = 0;
+        errorst[9] = 0;
+        errorst[8] = 0;
+        errorst[7] = 0;
+        errorst[6] = 0;
+        
+        bool neg = pos < 0;
+        i = 0;
+        if (pos) {
+            while (pos) {
+                position[18 - (i++)] = pos % 10 + 48;
+                pos /= 10;
+            }
+            if (neg) {
+                position[18 - i] = '-';
+            }
+        } else {
+            position[18] = '0';
+        }
+        print_debug(position, 21);
+        
+        err = error;
+        neg = err < 0;
+        i = 0;
+        if (err) {
+            while (err) {
+                errorst[15 - (i++)] = err % 10 + 48;
+                err /= 10;
+            }
+            if (neg) {
+                errorst[15 - i] = '-';
+            }
+        } else {
+            errorst[15] = '0';
+        }
+        print_debug(errorst, 18);
+        
+        MS_TIMER_Delay_ms(50);
+    }
+    
+}
+*/
 
 
+////////////////////////////////////////////////////
+// INTERRUPT ON CHANGE TEST
+////////////////////////////////////////////////////
+
+int main(void) {
+    PIN_MANAGER_Initialize();
+    INTERRUPT_Initialize();
+    CLOCK_Initialize();
+    UART_Initialise();
+    Hardware_PWM_Initialise();
+    MS_TIMER_Initialize();
+    Encoder_Initialise();
+    init_debug();
+    
+    IO_RB1_SetDirection(PIN_DIRECTION_OUTPUT);
+    
+    
+    
+    
+    
+    //uint16_t setSpeedms = 6;
+    //uint16_t PWMPeriod = __builtin_divsd(ENCODER_TO_LINEAR, setSpeedms);
+    
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, 1000);
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM2_OC_NUM, 0);
+    Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, 300);
+    Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM2_OC_NUM, 0);
+    Hardware_PWM_Enable(); // Start the hardware PWM timer
+    Hardware_PWM_Start(HARDWARE_PWM1_OC_NUM);
+    Hardware_PWM_Start(HARDWARE_PWM2_OC_NUM);
+    //Hardware_PWM_Period_Set_us(HARDWARE_PWM2_OC_NUM, 1500);
+    //Hardware_PWM_Enable(); // Start the hardware PWM timer
+    //Hardware_PWM_Start(HARDWARE_PWM1_OC_NUM);
+    
+    int32_t shaftVel;
+    bool neg;
+    char speed[15] = "Speed:       \r\n";
+    uint8_t i;
+    uint8_t count = 0;
+    while (1) {
+        speed[12] = 0;
+        speed[11] = 0;
+        speed[10] = 0;
+        speed[9] = 0;
+        speed[8] = 0;
+        speed[7] = 0;
+        speed[6] = 0;
+        shaftVel = Encoder_1_shaft_revs();//Encoder_1_get_shaft_ang_speed();
+        i = 0;
+        neg = shaftVel < 0;
+        i = 0;
+        if (shaftVel) {
+            while (shaftVel) {
+                speed[12 - (i++)] = (shaftVel * (neg ? -1: 1)) % 10 + 48;
+                shaftVel /= 10;
+            }
+            if (neg) {
+                speed[12 - i] = '-';
+            }
+        } else {
+            speed[12] = '0';
+        }
+        print_debug(speed, 15);
+        MS_TIMER_Delay_ms(500);
+        count++;
+        if (count == 10) {
+            Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, 0);
+            
+        }
+        //IO_RB4_Toggle();
+        //setSpeedms++;
+        //PWMPeriod = __builtin_divsd(ENCODER_TO_LINEAR, setSpeedms);
+        //Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, PWMPeriod);
+        //MS_TIMER_Delay_ms(50);
+    }
+}
 
 
-
-
-
-
+////////////////////////////////////////////////////
+// BLUETOOTH PWM TEST
+////////////////////////////////////////////////////
+/*
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
@@ -192,7 +360,7 @@ int main(void) {
                         
                         
                         sendCommandTo = PC_UART_NUM;
-                        */
+                        *
                     } else {
                         print_debug(commandBuffer.buffer, commandBuffer.tail - commandBuffer.buffer);
                     }
@@ -220,7 +388,7 @@ int main(void) {
 
     return 1;
 }
-
+*/
 ////////////////////////////////////////////////////
 // HARDWARE PWM TEST
 ////////////////////////////////////////////////////
@@ -262,25 +430,49 @@ int main(void) {
     PIN_MANAGER_Initialize();
     INTERRUPT_Initialize();
     CLOCK_Initialize();
+    IO_RB14_SetDirection(PIN_DIRECTION_OUTPUT);
+    IO_RB15_SetDirection(PIN_DIRECTION_OUTPUT);
     Software_PWM_Initialize();
+    MS_TIMER_Initialize();
     
-    Software_PWM_Period_Set(4,20000);
-    Software_PWM_Duty_Cycle_Set(4,100);
-    Software_PWM_Disable(4);
+    //Software_PWM_Period_Set(4,20000);
+    //Software_PWM_Duty_Cycle_Set(4,100);
+    //Software_PWM_Disable(4);
+    
+    Software_PWM_Period_Set(0,10U);
+    Software_PWM_Period_Set(1,10U);
+    Software_PWM_Period_Set(2,10U);
+    Software_PWM_Period_Set(3,10U);
+    Software_PWM_Period_Set(4,10U);
+    Software_PWM_Period_Set(5,10U);
+    //Software_PWM_Period_Set(1,25U);
+    Software_PWM_Duty_Cycle_Set(0,500);
+    Software_PWM_Duty_Cycle_Set(1,500);
+    Software_PWM_Duty_Cycle_Set(2,500);
+    Software_PWM_Duty_Cycle_Set(3,500);
+    Software_PWM_Duty_Cycle_Set(4,500);
+    Software_PWM_Duty_Cycle_Set(5,500);
+    //Software_PWM_Duty_Cycle_Set(0,500);
     Software_PWM_Enable(0);
+    Software_PWM_Enable(1);
+    Software_PWM_Enable(2);
+    Software_PWM_Enable(3);
+    Software_PWM_Enable(4);
+    Software_PWM_Enable(5);
+    //Software_PWM_Enable(1);
     Software_PWM_Start();
     
     uint16_t dutyCycle = 1;
     
     while (1) {
-        Software_PWM_Duty_Cycle_Set(4,dutyCycle);
-        IO_RA3_SetPin(1);
-        TMR1_Delay_ms(500);
-        IO_RA3_SetPin(0);
-        dutyCycle+=10;
-        if (dutyCycle > 100) {
-            dutyCycle = 1;
-        }
+        //Software_PWM_Duty_Cycle_Set(4,dutyCycle);
+        //IO_RA3_SetPin(1);
+        //MS_TIMER_Delay_ms(500);
+        //IO_RA3_SetPin(0);
+        //dutyCycle+=10;
+        //if (dutyCycle > 100) {
+        //    dutyCycle = 1;
+        //}
     }
 }
 */

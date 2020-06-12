@@ -1,14 +1,21 @@
 #include "hardware_PWM.h"
 #include <stdbool.h>
-#include "mcc_generated_files/tmr3.h"
-#include "util.h"
 
 static const uint16_t OCMode = 0b110; // Edge-Aligned PWM;
 
-uint16_t dutyCycle = 500;
+uint16_t dutyCycle1 = 500;
+uint16_t dutyCycle2 = 500;
+uint16_t dutyCycle3 = 500;
 
-#define HARDWARE_PWM_OC(OC_NUM, REGISTER) OC ## OC_NUM ## REGISTER
-#define HARDWARE_PWM_OC_REGISTER(OC, REGISTER) HARDWARE_PWM_OC(OC, REGISTER)
+/*
+ * Valid values are:
+ * 256, 64, 8, 1
+ * Do not set otherwise
+ */
+#define HARDWARE_PWM_TMR_PRESCALER 8
+#define HARDWARE_PWM_TMR_FREQUENCY (float)(CLOCK_PeripheralFrequencyGet() / TMR3_PRESCALER)
+
+#define HARDWARE_PWM_OC_REGISTER(OC, REGISTER) PREPROCESSOR_STITCH(OC, PREPROCESSOR_STITCH(OC_NUM, REGISTER))
 
 void Hardware_PWM_Initialise(void) {
 #ifdef HARDWARE_PWM1_OC_NUM
@@ -131,7 +138,25 @@ void Hardware_PWM_Initialise(void) {
     HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, TMR) = 0x00;
 #endif
 
-    TMR_FUNCTION(HARDWARE_PWM_TMR, Initialize());
+    TMR_TMR_REGISTER(HARDWARE_PWM_TMR) = 0x0000;
+    TMR_PR_REGISTER(HARDWARE_PWM_TMR) = 0x0000;
+    TMR_TxCON_REGISTER(HARDWARE_PWM_TMR) = 0x0000;
+    switch (HARDWARE_PWM_TMR_PRESCALER) {
+        case 256:
+            TMR_TxCONbits(HARDWARE_PWM_TMR).TCKPS = 0b11;
+            break;
+        case 64:
+            TMR_TxCONbits(HARDWARE_PWM_TMR).TCKPS = 0b10;
+            break;
+        case 8:
+            TMR_TxCONbits(HARDWARE_PWM_TMR).TCKPS = 0b01;
+            break;
+        case 1:
+            TMR_TxCONbits(HARDWARE_PWM_TMR).TCKPS = 0b00;
+            break;
+    }
+    TMR_TxCONbits(HARDWARE_PWM_TMR).TON = 1;
+    //TMR_FUNCTION(HARDWARE_PWM_TMR, Initialize());
 }
 
 void Hardware_PWM_Period_Set_us(uint8_t pwmNum, uint32_t us) {
@@ -147,26 +172,24 @@ void Hardware_PWM_Period_Set_us(uint8_t pwmNum, uint32_t us) {
     switch (pwmNum) {
 #ifdef HARDWARE_PWM1_OC_NUM
         case HARDWARE_PWM1_OC_NUM:
-            if (us < 20) {
-                us = 20;
-            } else if (us > 32768) {
-                us = 32769;
-            }
-            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, RS) = (uint16_t) (us * (TMR_FUNCTION(HARDWARE_PWM_TMR, FrequencyGet()) / 1000000) - 1);
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, RS) = (uint16_t) (us * (HARDWARE_PWM_TMR_FREQUENCY / 1000000) - 1);
+            Hardware_PWM_Duty_Cycle_Set(pwmNum, dutyCycle1);
             break;
 #endif
 #ifdef HARDWARE_PWM2_OC_NUM
         case HARDWARE_PWM2_OC_NUM:
-            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, RS) = (uint16_t) (us * (TMR_FUNCTION(HARDWARE_PWM_TMR, FrequencyGet()) / 1000000) - 1);
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, RS) = (uint16_t) (us * (HARDWARE_PWM_TMR_FREQUENCY / 1000000) - 1);
+            Hardware_PWM_Duty_Cycle_Set(pwmNum, dutyCycle2);
             break;
 #endif
 #ifdef HARDWARE_PWM3_OC_NUM
         case HARDWARE_PWM3_OC_NUM:
-            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, RS) = (uint16_t) (us * (TMR_FUNCTION(HARDWARE_PWM_TMR, FrequencyGet()) / 1000000) - 1);
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, RS) = (uint16_t) (us * (HARDWARE_PWM_TMR_FREQUENCY / 1000000) - 1);
+            Hardware_PWM_Duty_Cycle_Set(pwmNum, dutyCycle3);
             break;
 #endif
     }
-    Hardware_PWM_Duty_Cycle_Set(pwmNum, dutyCycle);
+    
 }
 
 void Hardware_PWM_Pulse_Width_Set_us(uint8_t pwmNum, uint32_t us) {
@@ -177,17 +200,17 @@ void Hardware_PWM_Pulse_Width_Set_us(uint8_t pwmNum, uint32_t us) {
     switch (pwmNum) {
 #ifdef HARDWARE_PWM1_OC_NUM
         case HARDWARE_PWM1_OC_NUM:
-            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, R) = (uint16_t) (us * (TMR_FUNCTION(HARDWARE_PWM_TMR, FrequencyGet()) / 1000000) - 1);
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, R) = (uint16_t) (us * (HARDWARE_PWM_TMR_FREQUENCY / 1000000) - 1);
             break;
 #endif
 #ifdef HARDWARE_PWM2_OC_NUM
         case HARDWARE_PWM2_OC_NUM:
-            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, R) = (uint16_t) (us * (TMR_FUNCTION(HARDWARE_PWM_TMR, FrequencyGet()) / 1000000) - 1);
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, R) = (uint16_t) (us * (HARDWARE_PWM_TMR_FREQUENCY / 1000000) - 1);
             break;
 #endif
 #ifdef HARDWARE_PWM3_OC_NUM
         case HARDWARE_PWM3_OC_NUM:
-            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, R) = (uint16_t) (us * (TMR_FUNCTION(HARDWARE_PWM_TMR, FrequencyGet()) / 1000000) - 1);
+            HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, R) = (uint16_t) (us * (HARDWARE_PWM_TMR_FREQUENCY / 1000000) - 1);
             break;
 #endif
     }
@@ -199,22 +222,24 @@ void Hardware_PWM_Pulse_Width_Set_us(uint8_t pwmNum, uint32_t us) {
  * @param percent
  */
 void Hardware_PWM_Duty_Cycle_Set(uint8_t pwmNum, uint16_t percent) {
-    dutyCycle = percent;
     switch (pwmNum) {
 #ifdef HARDWARE_PWM1_OC_NUM
         case HARDWARE_PWM1_OC_NUM:
+            dutyCycle1 = percent;
             HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, R) = \
                     (uint16_t) ((uint32_t) HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM1_OC_NUM, RS) * percent / 1000);
             break;
 #endif
 #ifdef HARDWARE_PWM2_OC_NUM
         case HARDWARE_PWM2_OC_NUM:
+            dutyCycle2 = percent;
             HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, R) = \
                     (uint16_t) ((uint32_t) HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM2_OC_NUM, RS) * percent / 1000);
             break;
 #endif
 #ifdef HARDWARE_PWM3_OC_NUM
         case HARDWARE_PWM3_OC_NUM:
+            dutyCycle3 = percent;
             HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, R) = \
                     (uint16_t) ((uint32_t) HARDWARE_PWM_OC_REGISTER(HARDWARE_PWM3_OC_NUM, RS) * percent / 1000);
             break;
@@ -263,7 +288,7 @@ void Hardware_PWM_Stop(uint8_t pwmNum) {
 }
 
 void Hardware_PWM_Enable(void) {
-    TMR_FUNCTION(HARDWARE_PWM_TMR, Start());
+    TMR_TxCONbits(HARDWARE_PWM_TMR).TON = 1;
 }
 
 void Hardware_PWM_Disable(void) {
@@ -276,5 +301,5 @@ void Hardware_PWM_Disable(void) {
 #ifdef HARDWARE_PWM3_OC_NUM
     Hardware_PWM_Stop(HARDWARE_PWM3_OC_NUM);
 #endif
-    TMR_FUNCTION(HARDWARE_PWM_TMR, Stop());
+    TMR_TxCONbits(HARDWARE_PWM_TMR).TON = 0;
 }

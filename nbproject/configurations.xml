@@ -13,21 +13,14 @@
         <itemPath>mcc_generated_files/mcc.h</itemPath>
         <itemPath>mcc_generated_files/system.h</itemPath>
         <itemPath>mcc_generated_files/uart1.h</itemPath>
-        <itemPath>mcc_generated_files/tmr2.h</itemPath>
         <itemPath>mcc_generated_files/pin_manager.h</itemPath>
         <itemPath>mcc_generated_files/uart2.h</itemPath>
-        <itemPath>mcc_generated_files/tmr3.h</itemPath>
-        <itemPath>mcc_generated_files/tmr4.h</itemPath>
-        <itemPath>mcc_generated_files/tmr5.h</itemPath>
       </logicalFolder>
       <itemPath>buffer.h</itemPath>
       <itemPath>uart_manager.h</itemPath>
       <itemPath>at_control.h</itemPath>
       <itemPath>util.h</itemPath>
-      <itemPath>software_PWM.h</itemPath>
       <itemPath>hardware_PWM.h</itemPath>
-      <itemPath>two_timers_PWM.h</itemPath>
-      <itemPath>one_timer_PWM.h</itemPath>
       <itemPath>ms_timer.h</itemPath>
       <itemPath>motor_encoder.h</itemPath>
     </logicalFolder>
@@ -47,22 +40,15 @@
         <itemPath>mcc_generated_files/interrupt_manager.c</itemPath>
         <itemPath>mcc_generated_files/mcc.c</itemPath>
         <itemPath>mcc_generated_files/uart1.c</itemPath>
-        <itemPath>mcc_generated_files/tmr2.c</itemPath>
         <itemPath>mcc_generated_files/pin_manager.c</itemPath>
         <itemPath>mcc_generated_files/uart2.c</itemPath>
-        <itemPath>mcc_generated_files/tmr3.c</itemPath>
-        <itemPath>mcc_generated_files/tmr4.c</itemPath>
-        <itemPath>mcc_generated_files/tmr5.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>at_control.c</itemPath>
       <itemPath>buffer.c</itemPath>
       <itemPath>uart_manager.c</itemPath>
       <itemPath>util.c</itemPath>
-      <itemPath>software_PWM.c</itemPath>
       <itemPath>hardware_PWM.c</itemPath>
-      <itemPath>two_timers_PWM.c</itemPath>
-      <itemPath>one_timer_PWM.c</itemPath>
       <itemPath>ms_timer.c</itemPath>
       <itemPath>motor_encoder.c</itemPath>
     </logicalFolder>
@@ -78,7 +64,7 @@
     <conf name="default" type="2">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
-        <targetDevice>PIC24FV16KA301</targetDevice>
+        <targetDevice>PIC24FV32KA301</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
         <platformTool>snap</platformTool>

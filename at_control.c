@@ -1,6 +1,5 @@
 #include "at_control.h"
 #include "ms_timer.h"
-#include "mcc_generated_files/tmr2.h"
 #include "uart_manager.h"
 #include "util.h"
 
@@ -222,7 +221,7 @@ uint8_t extract_state(BUFFER_OBJ *buffer) {
         if (compare_strings(buffer->tail, atStates[i].part, atStates[i].length)) {
             
             // print the state
-            print_debug(atStates[i].part + "\r\n", true);
+            print_debug(atStates[i].part, atStates[i].length, true);
             
             return i;
         }
@@ -400,8 +399,8 @@ void wait_for_connection(void) {
                 compare_strings(atRxBuffer.buffer, controllerHostName.part, controllerHostName.length)) {
             break;
         }
-        print_debug("Host Name Incorrect: ", 21);
-        print_debug(atRxBuffer.buffer, atRxBuffer.tail - atRxBuffer.buffer);
+        print_debug("Host Name Incorrect: ", 21, false);
+        print_debug(atRxBuffer.buffer, atRxBuffer.tail - atRxBuffer.buffer, false);
         atRxBuffer.tail = atRxBuffer.buffer;
         
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_DISC_INDEX],
@@ -416,6 +415,7 @@ void wait_for_connection(void) {
         //reset_bluetooth();
     }
     AT_PIN_Clear();
+    MS_TIMER_Delay_ms(20);
     BLUETOOTH_CLEAR_RX_BUFFER();
     /*uint8_t state = BT_STATE_INVALID;
     while (state != BT_STATE_CONNECTED_INDEX) {

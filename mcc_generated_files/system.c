@@ -9,8 +9,6 @@
 //#include "../two_timers_PWM.h"
 //#include "../one_timer_PWM.h"
 #include "traps.h"
-#include "tmr3.h"
-#include "tmr2.h"
 #include "../ms_timer.h"
 
 void SYSTEM_Initialize(void) {
@@ -18,10 +16,7 @@ void SYSTEM_Initialize(void) {
     INTERRUPT_Initialize();
     CLOCK_Initialize();
     UART_Initialise();
-    //Software_PWM_Initialize();
     Hardware_PWM_Initialise();
-    //Two_Timers_PWM_Initialise();
-    //One_Timer_PWM_Initialise();
     MS_TIMER_Initialize();
 #ifdef __USER_DEBUG
     init_debug();

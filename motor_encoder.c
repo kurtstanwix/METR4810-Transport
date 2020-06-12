@@ -31,8 +31,24 @@
 /* 
  * Motor_Shaft_Rev to Encoder_Counts
  * M_GEAR_RATIO * COUNTS_PER_REV
+ * TRANSPORT
  */
 #define M_REV_TO_ENC 390
+
+
+/* 
+ * Motor_Shaft_Rev to Encoder_Counts
+ * M_GEAR_RATIO * COUNTS_PER_REV
+ * Joint 1
+ */
+//#define M_REV_TO_ENC 630
+
+/* 
+ * Motor_Shaft_Rev to Encoder_Counts
+ * M_GEAR_RATIO * COUNTS_PER_REV
+ * Joint 2
+ */
+//#define M_REV_TO_ENC 894
 
 /* 
  * Radius: 0.015m
@@ -61,8 +77,8 @@ volatile uint8_t enc1Count = 0; // Number of counts since last processing
 volatile bool enc1Forward = true; // Is motor travelling forward
 volatile int32_t enc1Position = 0; // Distance in number of counts from initial position
 volatile int16_t enc1CountsPerSecond = 0; // Encoder shaft's speed (counts/s)
-volatile us_time_t enc1LastEncTime = 0; // Last processing time (us)
-volatile us_time_t enc1CurrentEncTime = 0; // Current processing time (us)
+volatile us_time_t enc1LastEncTimeUS = 0; // Last processing time (us)
+volatile us_time_t enc1CurrentEncTimeUS = 0; // Current processing time (us)
 
 //////////////////////////////////////////////////
 
@@ -86,7 +102,11 @@ volatile us_time_t enc2CurrentEncTime = 0; // Current processing time (us)
 
 #define MAX_SPEED 10000
 //#define MIN_SPEED -MAX_SPEED
-#define COUNT_PERIOD 2
+#define COUNT_PERIOD 6
+// If speed is zero, no interrupt will be generated to update this so
+// calling process will check the time since a speed update and zero
+// it if greater than this
+#define ZERO_SPEED_TIMEOUT 300
 
 
 //////////////////////////////////////////////////
@@ -160,23 +180,23 @@ void __attribute__ ((interrupt, no_auto_psv)) _CNInterrupt(void) {
                 //enc1Forward = false;
             }
             enc1Count++;
+            // process speed
             if (enc1Count == COUNT_PERIOD) {
-                IO_RB4_SetPin(PIN_STATE_ON);                // Force a DIVSD instruction, rather than slower software ___udivsi3
-                enc1CurrentEncTime = MS_TIMER_get_time_ms() * 1000 + __builtin_divsd(((uint32_t)MS_TIMER_get_TMR() * 1000), 1999);
-                if (enc1CurrentEncTime == enc1LastEncTime) {
+                // Force a DIVSD instruction, rather than slower software ___udivsi3
+                enc1CurrentEncTimeUS = MS_TIMER_get_time_us();
+                if (enc1CurrentEncTimeUS == enc1LastEncTimeUS) {
                     enc1CountsPerSecond = MAX_SPEED;
                 } else {
                     // Force a DIVSD instruction, rather than software ___udivsi3
                     //countsPerSecond = __builtin_divsd((COUNT_PERIOD * 1000000), currentEncTime - lastEncTime);
-                    enc1CountsPerSecond = (COUNT_PERIOD * 1000000) / (enc1CurrentEncTime - enc1LastEncTime);
+                    enc1CountsPerSecond = (COUNT_PERIOD * 1000000) / (enc1CurrentEncTimeUS - enc1LastEncTimeUS);
                 }
                 
                 if (!enc1Forward) {
                     enc1CountsPerSecond *= -1; // Going backwards
                 }
                 enc1Count = 0;
-                enc1LastEncTime = enc1CurrentEncTime;
-                IO_RB4_SetPin(PIN_STATE_OFF);
+                enc1LastEncTimeUS = enc1CurrentEncTimeUS;
             }
         }
     } else if (!ENCODER_1_PINA_GetValue()) {
@@ -258,8 +278,17 @@ int32_t Encoder_1_shaft_revs(void) {
     return (enc1Position * 1000) / M_REV_TO_ENC;
 }
 
-ms_time_t Encoder_1_get_last_end_time(void) {
-    return enc1LastEncTime;
+void Encoder_1_process(void) {
+    //uint16_t test1 = MS_TIMER_get_time_ms();
+    //uint16_t test2 = enc1LastEncTimeUS / 1000;
+    //uint16_t test3 = MS_TIMER_get_time_ms() - enc1LastEncTimeUS / 1000;
+    if ((MS_TIMER_get_time_ms() - enc1LastEncTimeUS / 1000) > ZERO_SPEED_TIMEOUT) {
+        enc1CountsPerSecond = 0;
+    }
+}
+
+ms_time_t Encoder_1_get_last_enc_time(void) {
+    return enc1LastEncTimeUS;
 }
 
 //////////////////////////////////////////////////

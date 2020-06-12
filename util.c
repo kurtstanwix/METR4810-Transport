@@ -11,17 +11,20 @@ void init_debug(void) {
 
 #ifdef PC_UART_NUM
 #ifdef __USER_DEBUG
-void print_debug(char *toPrint, uint8_t length) {
+void print_debug(char *toPrint, uint8_t length, bool newLine) {
     copy_to_buffer(&debugBuffer, toPrint, length, true);
+    if (newLine) {
+        copy_to_buffer(&debugBuffer, "\r\n", 2, false);
+    }
     send_buffer(&debugBuffer, PC_UART_NUM, true);
 }
 #else
-void print_debug(char *toPrint, uint8_t length) {
+void print_debug(char *toPrint, uint8_t length, bool newLine) {
     return;
 }
 #endif
 #else
-void print_debug(char *toPrint, uint8_t length) {
+void print_debug(char *toPrint, uint8_t length, bool newLine) {
     return;
 }
 #endif

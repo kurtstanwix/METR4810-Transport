@@ -1,6 +1,7 @@
 #include <xc.h>
 #include "interrupt_manager.h"
 #include "../ms_timer.h"
+#include "../hardware_PWM.h"
 
 void INTERRUPT_Initialize(void) {
     //    UERI: U2E - UART2 Error
@@ -29,7 +30,7 @@ void INTERRUPT_Initialize(void) {
     IPC6bits.T4IP = 1;
     //    TI: T2 - Timer2
     //    Priority: 3
-    IPC1bits.T2IP = 3;
+    HARDWARE_PWM_TxIP = 3;
     //    MS_TIMER: Tx - Timerx
     //    Priority: 7
     MS_TIMER_TxIP = 7;

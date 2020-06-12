@@ -2,11 +2,14 @@
 #define	_HARDWARE_PWM_H
 
 #include <xc.h>
+#include "tmr.h"
 
-#define HARDWARE_PWM1_OC_NUM 2
-#define HARDWARE_PWM2_OC_NUM 3
+//#define HARDWARE_PWM1_OC_NUM 3
+//#define HARDWARE_PWM2_OC_NUM 2
 
 #define HARDWARE_PWM_TMR 3
+
+#define HARDWARE_PWM_TxIP TMR_TxIP(HARDWARE_PWM_TMR)
 
 void Hardware_PWM_Initialise(void);
 

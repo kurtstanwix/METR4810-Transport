@@ -7,7 +7,7 @@
 #include "util.h"
 
 #define BLUETOOTH_UART_NUM 1
-#ifndef __USER_DEBUG
+#ifdef __USER_DEBUG
 #define PC_UART_NUM 2
 #endif
 

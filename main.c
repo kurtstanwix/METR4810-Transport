@@ -467,13 +467,17 @@ void process_comms(void) {
             switch (rcvState) {
                 case STATE_RCV_SEQ_U:
                     if (receivedSeqNum == RCV_SEQNUM_U) {
+                        // Correct sequence number received, extract packet,
+                        // set ready flag and send ACK
                         print_debug("Received: ", 10, false);
                         print_debug(rcvBuffer.buffer, rcvBuffer.tail - rcvBuffer.buffer, false);
                         copy_to_buffer(&packetBuffer, rcvBuffer.buffer + 1, rcvBuffer.tail - rcvBuffer.buffer - 1, true);
                         packetReady = true;
                         send_ACK(RCV_SEQNUM_U);
                         rcvState = STATE_RCV_SEQ_V;
-                    } else {
+                    }
+                    // Otherwise incorrect sequence number, discard packet
+                    else {
                         print_debug("Incorrect Seq Num. Expected: ", 29, false);
                         char temp = RCV_SEQNUM_U + ASCII_OFFSET;
                         print_debug(&temp, 1, false);
@@ -483,13 +487,18 @@ void process_comms(void) {
                     break;
                 case STATE_RCV_SEQ_V:
                     if (receivedSeqNum == RCV_SEQNUM_V) {
+                        // Correct sequence number received, extract packet,
+                        // set ready flag and send ACK
                         print_debug("Received: ", 10, false);
                         print_debug(rcvBuffer.buffer, rcvBuffer.tail - rcvBuffer.buffer, false);
                         copy_to_buffer(&packetBuffer, rcvBuffer.buffer + 1, rcvBuffer.tail - rcvBuffer.buffer - 1, true);
                         packetReady = true;
                         send_ACK(RCV_SEQNUM_V);
                         rcvState = STATE_RCV_SEQ_U;
-                    } else {
+                    }
+                    // Otherwise incorrect sequence number, discard packet
+                    else {
+                        // Incorrect sequence number, discard packet
                         print_debug("Incorrect Seq Num. Expected: ", 29, false);
                         char temp = RCV_SEQNUM_V + ASCII_OFFSET;
                         print_debug(&temp, 1, false);
@@ -505,6 +514,7 @@ void process_comms(void) {
     switch (sndState) {
         case STATE_SND_SEQ_X:
             if (!sent) {
+                // Prepend the sequence number and send, starting the timeout timer
                 sndBuffer.buffer[0] = SND_SEQNUM_X + ASCII_OFFSET;
                 send_buffer(&sndBuffer, BLUETOOTH_UART_NUM, false);
                 sentTime = MS_TIMER_get_time_ms();
@@ -513,15 +523,18 @@ void process_comms(void) {
             break;
         case STATE_SND_SEQ_X_ACK:
             if (rcvACKX) {
+                // Have received the correct ACK, clear send buffer and move to next seq num
                 sent = true;
                 sndState = STATE_SND_SEQ_Y;
                 sndBuffer.tail = sndBuffer.buffer;
             } else if (MS_TIMER_get_time_ms() - sentTime > COMMS_TIMEOUT) {
+                // No ACK received in time, resend message
                 sndState = STATE_SND_SEQ_X;
             }
             break;
         case STATE_SND_SEQ_Y:
             if (!sent) {
+                // Prepend the sequence number and send, starting the timeout timer
                 sndBuffer.buffer[0] = SND_SEQNUM_Y + ASCII_OFFSET;
                 send_buffer(&sndBuffer, BLUETOOTH_UART_NUM, false);
                 sentTime = MS_TIMER_get_time_ms();
@@ -530,10 +543,12 @@ void process_comms(void) {
             break;
         case STATE_SND_SEQ_Y_ACK:
             if (rcvACKY) {
+                // Have received the correct ACK, clear send buffer and move to next seq num
                 sent = true;
                 sndState = STATE_SND_SEQ_X;
                 sndBuffer.tail = sndBuffer.buffer;
             } else if (MS_TIMER_get_time_ms() - sentTime > COMMS_TIMEOUT) {
+                // No ACK received in time, resend message
                 sndState = STATE_SND_SEQ_Y;
             }
             break;

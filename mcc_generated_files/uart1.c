@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <xc.h>
 #include "uart1.h"
+#include "../buffer.h"
 
 static uint8_t * volatile rxTail;
 static uint8_t *rxHead;
@@ -16,8 +17,8 @@ static bool volatile rxOverflowed;
  * when head == tail.  So full will result in head/tail being off by one due to
  * the extra byte.
  */
-#define UART1_CONFIG_TX_BYTEQ_LENGTH (32+1)
-#define UART1_CONFIG_RX_BYTEQ_LENGTH (32+1)
+#define UART1_CONFIG_TX_BYTEQ_LENGTH (2*MAX_BUFFER_SIZE+1)
+#define UART1_CONFIG_RX_BYTEQ_LENGTH (2*MAX_BUFFER_SIZE+1)
 
 static uint8_t txQueue[UART1_CONFIG_TX_BYTEQ_LENGTH];
 static uint8_t rxQueue[UART1_CONFIG_RX_BYTEQ_LENGTH];
@@ -45,10 +46,6 @@ void UART1_Initialize(void) {
 
     rxOverflowed = false;
 
-    UART1_SetTxInterruptHandler(&UART1_Transmit_CallBack);
-
-    UART1_SetRxInterruptHandler(&UART1_Receive_CallBack);
-
     // Enable UART1 Rx interrupt
     IEC0bits.U1RXIE = 1;
 
@@ -57,20 +54,7 @@ void UART1_Initialize(void) {
     U1STAbits.UTXEN = 1;
 }
 
-/**
- * Maintains the driver's transmitter state machine and implements its ISR
- */
-void UART1_SetTxInterruptHandler(void* handler) {
-    if (handler == NULL) {
-        UART1_TxDefaultInterruptHandler = &UART1_Transmit_CallBack;
-    } else {
-        UART1_TxDefaultInterruptHandler = handler;
-    }
-}
-
 void __attribute__((interrupt, no_auto_psv)) _U1TXInterrupt(void) {
-    (*UART1_TxDefaultInterruptHandler)();
-
     if (txHead == txTail) {
         IEC0bits.U1TXIE = 0;
     } else {
@@ -94,20 +78,7 @@ void UART1_Clear_Tx_Buffer(void) {
     txHead = txTail;
 }
 
-void __attribute__((weak)) UART1_Transmit_CallBack(void) {
-}
-
-void UART1_SetRxInterruptHandler(void* handler) {
-    if (handler == NULL) {
-        UART1_RxDefaultInterruptHandler = &UART1_Receive_CallBack;
-    } else {
-        UART1_RxDefaultInterruptHandler = handler;
-    }
-}
-
 void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
-    (*UART1_RxDefaultInterruptHandler)();
-
     IFS0bits.U1RXIF = 0;
 
     while ((U1STAbits.URXDA == 1)) {
@@ -122,8 +93,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 (rxHead != rxQueue)) {
             // Pure wrap no collision
             rxTail = rxQueue;
-        } else // must be collision
-        {
+        } else { // must be collision
             rxOverflowed = true;
         }
     }
@@ -133,9 +103,6 @@ void UART1_Clear_Rx_Buffer(void) {
     while (UART1_IsRxReady()) {
         UART1_Read();
     }
-}
-
-void __attribute__((weak)) UART1_Receive_CallBack(void) {
 }
 
 void __attribute__((interrupt, no_auto_psv)) _U1ErrInterrupt(void) {
@@ -162,7 +129,7 @@ uint8_t UART1_Read(void) {
 }
 
 void UART1_Write(uint8_t byte) {
-    while (UART1_IsTxReady() == 0) {
+    while (UART1_IsTxReady() == false) {
     }
 
     *txTail = byte;

@@ -44,10 +44,6 @@ void UART2_Initialize(void) {
 
     rxOverflowed = false;
 
-    UART2_SetTxInterruptHandler(&UART2_Transmit_CallBack);
-
-    UART2_SetRxInterruptHandler(&UART2_Receive_CallBack);
-
     IEC1bits.U2RXIE = 1;
 
     //Make sure to set LAT bit corresponding to TxPin as high before UART initialization
@@ -55,20 +51,7 @@ void UART2_Initialize(void) {
     U2STAbits.UTXEN = 1;
 }
 
-/**
- * Maintains the driver's transmitter state machine and implements its ISR
- */
-void UART2_SetTxInterruptHandler(void* handler) {
-    if (handler == NULL) {
-        UART2_TxDefaultInterruptHandler = &UART2_Transmit_CallBack;
-    } else {
-        UART2_TxDefaultInterruptHandler = handler;
-    }
-}
-
 void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void) {
-    (*UART2_TxDefaultInterruptHandler)();
-
     if (txHead == txTail) {
         IEC1bits.U2TXIE = 0;
     } else {
@@ -80,7 +63,6 @@ void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void) {
             if (txHead == (txQueue + UART2_CONFIG_TX_BYTEQ_LENGTH)) {
                 txHead = txQueue;
             }
-
             // Are we empty?
             if (txHead == txTail) {
                 break;
@@ -93,21 +75,7 @@ void UART2_Clear_Tx_Buffer(void) {
     txHead = txTail;
 }
 
-void __attribute__((weak)) UART2_Transmit_CallBack(void) {
-
-}
-
-void UART2_SetRxInterruptHandler(void* handler) {
-    if (handler == NULL) {
-        UART2_RxDefaultInterruptHandler = &UART2_Receive_CallBack;
-    } else {
-        UART2_RxDefaultInterruptHandler = handler;
-    }
-}
-
 void __attribute__((interrupt, no_auto_psv)) _U2RXInterrupt(void) {
-    (*UART2_RxDefaultInterruptHandler)();
-
     IFS1bits.U2RXIF = 0;
 
     while ((U2STAbits.URXDA == 1)) {
@@ -124,8 +92,7 @@ void __attribute__((interrupt, no_auto_psv)) _U2RXInterrupt(void) {
             // Pure wrap no collision
             rxTail = rxQueue;
         }
-        else // must be collision
-        {
+        else { // must be collision
             rxOverflowed = true;
         }
     }
@@ -135,10 +102,6 @@ void UART2_Clear_Rx_Buffer(void) {
     while (UART2_IsRxReady()) {
         UART2_Read();
     }
-}
-
-void __attribute__((weak)) UART2_Receive_CallBack(void) {
-
 }
 
 void __attribute__((interrupt, no_auto_psv)) _U2ErrInterrupt(void) {

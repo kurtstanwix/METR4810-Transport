@@ -58,6 +58,7 @@
       <itemPath>Makefile</itemPath>
       <itemPath>MyConfig.mc3</itemPath>
     </logicalFolder>
+    <itemPath>tmr.h</itemPath>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -706,6 +707,8 @@
                   value="${memories.instruction.ram.ranges}"/>
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-2bff"/>
+        <property key="programmerToGoFilePath"
+                  value="J:/Uni/Fifth Year/Semester 1/METR4810/Code/transport-system/debug/default/default_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
         <property key="programoptions.pgmentry.voltage" value="low"/>

@@ -54,7 +54,7 @@ void UART2_Initialize(void);
     None.
 */
 
-uint8_t UART2_Read( void);
+uint8_t UART2_Read(void);
 
 void UART2_Clear_Rx_Buffer(void);
 
@@ -80,10 +80,9 @@ void UART2_Clear_Rx_Buffer(void);
     None.
 */
 
-void UART2_Write( uint8_t byte);
+void UART2_Write(uint8_t byte);
 
 void UART2_Clear_Tx_Buffer(void);
-
 
 /**
   @Description
@@ -114,85 +113,5 @@ bool UART2_IsTxReady(void);
     false if there is still data pending to transfer.
 */
 bool UART2_IsTxDone(void);
-
-/**
-  @Summary
-    Assigns a function pointer with a transmit callback address.
-
-  @Description
-    This routine assigns a function pointer with a transmit callback address.
-
-  @Param
-    Address of the callback routine.
-
-  @Returns
-    None
- 
-  @Example 
-    <code>
-        UART2_SetTxInterruptHandler(&UART2_Transmit_CallBack);
-    </code>
-*/
-void UART2_SetTxInterruptHandler(void* handler);
-
-/**
-  @Summary
-    Transmit callback routine.
-
-  @Description
-    This routine is a transmit callback function.
-
-  @Param
-    None.
-
-  @Returns
-    None
- 
-  @Example 
-    <code>
-        UART2_SetTxInterruptHandler(&UART2_Transmit_CallBack);
-    </code>
-*/
-void UART2_Transmit_CallBack(void);
-
-/**
-  @Summary
-    Assigns a function pointer with a receive callback address.
-
-  @Description
-    This routine assigns a function pointer with a receive callback address.
-
-  @Param
-    Address of the callback routine.
-
-  @Returns
-    None
- 
-  @Example 
-    <code>
-        UART2_SetRxInterruptHandler(&UART2_Receive_CallBack);
-    </code>
-*/
-void UART2_SetRxInterruptHandler(void* handler);
-
-/**
-  @Summary
-    Receive callback routine.
-
-  @Description
-    This routine is a receive callback function.
-
-  @Param
-    None.
-
-  @Returns
-    None
- 
-  @Example 
-    <code>
-        UART2_SetTxInterruptHandler(&UART2_Receive_CallBack);
-    </code>
-*/
-void UART2_Receive_CallBack(void);
  
 #endif  // _UART2_H

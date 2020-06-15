@@ -28,7 +28,7 @@ void INTERRUPT_Initialize(void) {
     //    TI: T4 - Timer4
     //    Priority: 1
     IPC6bits.T4IP = 1;
-    //    TI: T2 - Timer2
+    //    Hardware PWMK Timer: Tx - Timerx
     //    Priority: 3
     HARDWARE_PWM_TxIP = 3;
     //    MS_TIMER: Tx - Timerx

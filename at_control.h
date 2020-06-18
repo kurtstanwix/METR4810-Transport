@@ -6,9 +6,9 @@
 #include "buffer.h"
 #include "mcc_generated_files/pin_manager.h"
 
-#define AT_PIN_Set() IO_RB8_SetPin(1)
-#define AT_PIN_Clear() IO_RB8_SetPin(0)
-#define BT_IS_CONNECTED() IO_RB9_GetValue()
+#define AT_PIN_Set() IO_RA4_SetPin(1)
+#define AT_PIN_Clear() IO_RA4_SetPin(0)
+#define BT_IS_CONNECTED() IO_RB4_GetValue()
 
 
 typedef struct _AT_COMMAND {

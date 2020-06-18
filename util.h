@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 //#ifdef __USER_CONTROL
-#define __USER_DEBUG
+//#define __USER_DEBUG
 //#endif
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))

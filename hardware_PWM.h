@@ -4,8 +4,8 @@
 #include <xc.h>
 #include "tmr.h"
 
-//#define HARDWARE_PWM1_OC_NUM 3
-//#define HARDWARE_PWM2_OC_NUM 2
+#define HARDWARE_PWM1_OC_NUM 3
+#define HARDWARE_PWM2_OC_NUM 2
 
 #define HARDWARE_PWM_TMR 3
 

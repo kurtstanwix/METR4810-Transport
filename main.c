@@ -35,6 +35,7 @@ void delayUs(uint32_t delay_in_ms) {
 
 
 
+BUFFER_OBJ testingBuffer;
 
 
 // 16 bytes for packet, then 2 for \r\n
@@ -365,6 +366,7 @@ int main(void) {
 ////////////////////////////////////////////////////
 
 
+
 #define PACKET_LENGTH 34
 BUFFER_OBJ rcvBuffer;
 BUFFER_OBJ sndBuffer;
@@ -406,14 +408,14 @@ void init_comms(void) {
     init_buffer(&sndBuffer, PACKET_LENGTH);
     init_buffer(&packetBuffer, PACKET_LENGTH - 1);
     init_buffer(&ackBuffer, 7);
-    
+
     print_debug("Waiting for connection...", 25, true);
     wait_for_connection();
     print_debug("Connected", 9, true);
-    
+
     rcvState = STATE_RCV_SEQ_U;
     sndState = STATE_SND_SEQ_X;
-    
+
     sent = true;
 }
 
@@ -433,6 +435,7 @@ bool comms_send(BUFFER_OBJ *toSend) {
     sndBuffer.tail = sndBuffer.buffer + 1;
     copy_to_buffer(&sndBuffer, toSend->buffer, toSend->tail - toSend->buffer, false);
     sent = false;
+    return true;
 }
 
 void send_ACK(uint8_t seqNum) {
@@ -443,6 +446,18 @@ void send_ACK(uint8_t seqNum) {
     send_buffer(&ackBuffer, BLUETOOTH_UART_NUM, true);
 }
 
+
+#define COMMAND_LENGTH 3
+#define COMMAND_ACK_INDEX 0
+#define COMMAND_MOV_INDEX 1
+#define COMMAND_SPD_INDEX 2
+
+const char *commands[] = {
+    "ACK",
+    "MOV",
+    "SPD"
+};
+
 void process_comms(void) {
     if (!BT_IS_CONNECTED()) {
         print_debug("Lost Connection\n\rReconnecting...", 32, true);
@@ -452,11 +467,11 @@ void process_comms(void) {
         sndState = STATE_SND_SEQ_X;
         sent = true;
     }
-    
+
     rcvStatus = read_line_to_buffer(&rcvBuffer, BLUETOOTH_UART_NUM, 1);
     if (rcvStatus == UART_READ_LINE_RECEIVED) {
         // Process ACK's seperately from rcv FSM
-        if (compare_strings(rcvBuffer.buffer + 1, "ACK", 3)) {
+        if (compare_strings(rcvBuffer.buffer + 1, commands[COMMAND_ACK_INDEX], COMMAND_LENGTH)) {
             if (rcvBuffer.buffer[4] - ASCII_OFFSET == SND_SEQNUM_X) {
                 rcvACKX = true;
             } else if (rcvBuffer.buffer[4] - ASCII_OFFSET == SND_SEQNUM_Y) {
@@ -475,8 +490,7 @@ void process_comms(void) {
                         packetReady = true;
                         send_ACK(RCV_SEQNUM_U);
                         rcvState = STATE_RCV_SEQ_V;
-                    }
-                    // Otherwise incorrect sequence number, discard packet
+                    }// Otherwise incorrect sequence number, discard packet
                     else {
                         print_debug("Incorrect Seq Num. Expected: ", 29, false);
                         char temp = RCV_SEQNUM_U + ASCII_OFFSET;
@@ -495,8 +509,7 @@ void process_comms(void) {
                         packetReady = true;
                         send_ACK(RCV_SEQNUM_V);
                         rcvState = STATE_RCV_SEQ_U;
-                    }
-                    // Otherwise incorrect sequence number, discard packet
+                    }// Otherwise incorrect sequence number, discard packet
                     else {
                         // Incorrect sequence number, discard packet
                         print_debug("Incorrect Seq Num. Expected: ", 29, false);
@@ -510,7 +523,7 @@ void process_comms(void) {
         }
         rcvBuffer.tail = rcvBuffer.buffer;
     }
-    
+
     switch (sndState) {
         case STATE_SND_SEQ_X:
             if (!sent) {
@@ -555,77 +568,78 @@ void process_comms(void) {
     }
     rcvACKX = false;
     rcvACKY = false;
-    /*
-    uint8_t seqNum = packetBuffer.buffer[0] - ASCII_OFFSET;
-            if (seqNum != receiveSeq) {
-                print_debug("Incorrect Seq Num. Expected: ", 29, false);
-                receiveSeq += ASCII_OFFSET;
-                print_debug(&receiveSeq, 1, false);
-                receiveSeq -= ASCII_OFFSET;
-                print_debug(", Got: ", 7, false);
-                print_debug(packetBuffer.buffer, 1, true);
-            } else if (compare_strings((packetBuffer.buffer + 1), "MOV", 3)) {
-                print_debug("Move Command Received:", 22, true);
-                print_debug("Distance = ", 11, false);
-                print_debug((packetBuffer.buffer + 4), 4, false);
-                print_debug("mm", 2, true);
-                
-                sendSeq += ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, &sendSeq, 1, true);
-                sendSeq -= ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, "ACK", 3, false);
-                
-                seqNum += ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, &seqNum, 1, false);
-                seqNum -= ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, "\r\n", 2, false);
-                
-                if (receiveSeq == 1) {
-                    receiveSeq = 0;
-                } else {
-                    receiveSeq = 1;
-                }
-                if (sendSeq == 3) {
-                    sendSeq = 2;
-                } else {
-                    sendSeq = 3;
-                }
-                
-                    send_buffer(&commandBuffer, BLUETOOTH_UART_NUM, true);
-            } else if (compare_strings((packetBuffer.buffer + 1), "SPD", 3)) {
-                print_debug("Speed Command Received:", 23, true);
-                print_debug("Speed = ", 8, false);
-                print_debug((packetBuffer.buffer + 4), 3, false);
-                print_debug("mm/s", 4, true);
-                
-                sendSeq += ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, &sendSeq, 1, true);
-                sendSeq -= ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, "ACK", 3, false);
-                
-                seqNum += ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, &seqNum, 1, false);
-                seqNum -= ASCII_OFFSET;
-                copy_to_buffer(&commandBuffer, "\r\n", 2, false);
-                
-                if (receiveSeq == 1) {
-                    receiveSeq = 0;
-                } else {
-                    receiveSeq = 1;
-                }
-                if (sendSeq == 3) {
-                    sendSeq = 2;
-                } else {
-                    sendSeq = 3;
-                }
-                
-                    send_buffer(&commandBuffer, BLUETOOTH_UART_NUM, true);
-            } else {
-                print_debug("Invalid Command: ", 17, false);
-                print_debug(packetBuffer.buffer + 1, packetBuffer.tail - packetBuffer.buffer -1, false);
-            }
-            packetBuffer.tail = packetBuffer.buffer;
-     * */
+}
+
+// Searches backwards from the buffer's tail to find the prevChar and returns
+// the integer parameter between the two
+
+int16_t get_param(BUFFER_OBJ *packet, uint8_t prevChar) {
+    int16_t result = 0;
+    //uint8_t i = packet->tail - packet->buffer - 1;
+    uint8_t j;
+    uint8_t *startIndex = packet->tail;
+    while (*(packet->tail) != prevChar) {
+        uint16_t digit = *(packet->tail);
+        if (digit == '-') {
+            result *= -1;
+            packet->tail--;
+            break;
+        }
+        if (digit < 0 + ASCII_OFFSET || digit > 9 + ASCII_OFFSET) {
+            // Parameter contains non numeric value
+            //print_debug("Invalid Param for MOV", 21, true);
+            return (1 << 16) - 1; // An invalid number
+        }
+        digit -= ASCII_OFFSET;
+        // Convert digit into it value based on its position
+        for (j = 0; j < (startIndex - packet->tail); j++) {
+            digit *= 10;
+        }
+        // Add digit to overall value
+        result += digit;
+        packet->tail--;
+    }
+    return result;
+}
+
+void set_speed(int16_t speed) {
+    if (speed > 0) {
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, 1000);
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM2_OC_NUM, 1000 - (uint16_t) speed);
+    } else if (speed < 0) {
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, 1000 - (uint16_t) (speed * -1));
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM2_OC_NUM, 1000);
+    } else {
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM1_OC_NUM, 1000);
+        Hardware_PWM_Duty_Cycle_Set(HARDWARE_PWM2_OC_NUM, 1000);
+    }
+}
+
+void process_packet(BUFFER_OBJ *packet) {
+    if (compare_strings(packet->buffer, commands[COMMAND_MOV_INDEX], COMMAND_LENGTH)) {
+        packet->tail -= 3;
+        uint16_t dist = get_param(packet, commands[COMMAND_MOV_INDEX][COMMAND_LENGTH - 1]);
+        uint8_t t = 0;
+    } else if (compare_strings(packet->buffer, commands[COMMAND_SPD_INDEX], COMMAND_LENGTH)) {
+        packet->tail -= 3;
+        uint16_t speed = get_param(packet, commands[COMMAND_SPD_INDEX][COMMAND_LENGTH - 1]);
+        set_speed(speed);
+        copy_to_buffer(&testingBuffer, "SPD\r\n", 5, true);
+        comms_send(&testingBuffer);
+    } else if (compare_strings(packet->buffer, "TEST", 4)) {
+        if (*(packet->tail - 3) == '1') {
+            IO_RA2_SetPin(PIN_STATE_ON);
+            copy_to_buffer(&testingBuffer, "Light ON\r\n", 10, true);
+            comms_send(&testingBuffer);
+        } else if (*(packet->tail - 3) == '0') {
+            IO_RA2_SetPin(PIN_STATE_OFF);
+            copy_to_buffer(&testingBuffer, "Light OFF\r\n", 11, true);
+            comms_send(&testingBuffer);
+        }
+    } else {
+        print_debug("Invalid Command", 15, true);
+        print_debug(packet->buffer, packet->tail - packet->buffer, false);
+    }
 }
 
 int main(void) {
@@ -636,30 +650,42 @@ int main(void) {
     CLOCK_Initialize();
     UART_Initialise();
     MS_TIMER_Initialize();
-    init_debug();
+    Hardware_PWM_Initialise();
     
+    Hardware_PWM_Enable();
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM1_OC_NUM, 1000);
+    Hardware_PWM_Period_Set_us(HARDWARE_PWM2_OC_NUM, 1000);
+    set_speed(0);
+    Hardware_PWM_Start(HARDWARE_PWM1_OC_NUM);
+    Hardware_PWM_Start(HARDWARE_PWM2_OC_NUM);
+    
+    IO_RA2_SetDirection(PIN_DIRECTION_OUTPUT);
+    
+    init_debug();
+
     AT_PIN_Clear();
 
     PC_CLEAR_RX_BUFFER();
     PC_CLEAR_TX_BUFFER();
-    
+
     init_bluetooth();
     init_comms();
-    
+
     BUFFER_OBJ testRcvBuffer;
     init_buffer(&testRcvBuffer, 32 + 2 - 1);
-    BUFFER_OBJ testingBuffer;
     init_buffer(&testingBuffer, 32 + 2 - 1);
-    
+
     uint8_t pcrxStatus;
     bool takingInput = true;
 
     while (1) {
         process_comms();
         if (comms_get_packet(&testRcvBuffer)) {
+            process_packet(&testRcvBuffer);
             print_debug("Got: ", 5, false);
             print_debug(testRcvBuffer.buffer, testRcvBuffer.tail - testRcvBuffer.buffer, false);
         }
+        /*
         if (takingInput) {
             pcrxStatus = read_line_to_buffer(&testingBuffer, PC_UART_NUM, 1);
             if (pcrxStatus == UART_READ_LINE_RECEIVED) {
@@ -671,7 +697,7 @@ int main(void) {
             if (takingInput = comms_send(&testingBuffer)) {
                 testingBuffer.tail = testingBuffer.buffer;
             }
-        }
+        }*/
     }
 }
 
@@ -762,7 +788,7 @@ int main(void) {
                         
                         
                     sendCommandTo = PC_UART_NUM;
-                     *
+ *
                 } else {
                     print_debug(commandBuffer.buffer, commandBuffer.tail - commandBuffer.buffer, false);
                 }
@@ -859,7 +885,7 @@ int main(void) {
 
     return 1;
 }
-*/
+ */
 ////////////////////////////////////////////////////
 // HARDWARE PWM TEST
 ////////////////////////////////////////////////////

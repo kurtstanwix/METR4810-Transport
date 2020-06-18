@@ -1,5 +1,6 @@
 #include "hardware_PWM.h"
 #include <stdbool.h>
+#include "mcc_generated_files/clock.h"
 
 static const uint16_t OCMode = 0b110; // Edge-Aligned PWM;
 
@@ -13,9 +14,9 @@ uint16_t dutyCycle3 = 500;
  * Do not set otherwise
  */
 #define HARDWARE_PWM_TMR_PRESCALER 8
-#define HARDWARE_PWM_TMR_FREQUENCY (float)(CLOCK_PeripheralFrequencyGet() / TMR3_PRESCALER)
+#define HARDWARE_PWM_TMR_FREQUENCY (float)(CLOCK_PeripheralFrequencyGet() / HARDWARE_PWM_TMR_PRESCALER)
 
-#define HARDWARE_PWM_OC_REGISTER(OC, REGISTER) PREPROCESSOR_STITCH(OC, PREPROCESSOR_STITCH(OC_NUM, REGISTER))
+#define HARDWARE_PWM_OC_REGISTER(OC_NUM, REGISTER) PREPROCESSOR_STITCH(OC, PREPROCESSOR_STITCH(OC_NUM, REGISTER))
 
 void Hardware_PWM_Initialise(void) {
 #ifdef HARDWARE_PWM1_OC_NUM

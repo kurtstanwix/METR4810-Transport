@@ -33,7 +33,7 @@ void PIN_MANAGER_Initialize(void) {
     IO_RB1_SetDirection(PIN_DIRECTION_OUTPUT); // OC3 PWM
 #endif
     IO_RB2_SetDirection(PIN_DIRECTION_INPUT); // UART1 Rx
-    IO_RB4_SetDirection(PIN_DIRECTION_OUTPUT);
+    IO_RB4_SetDirection(PIN_DIRECTION_INPUT);
     IO_RB7_SetDirection(PIN_DIRECTION_OUTPUT); // UART1 Tx
     IO_RB8_SetDirection(PIN_DIRECTION_OUTPUT);
     IO_RB9_SetDirection(PIN_DIRECTION_INPUT);

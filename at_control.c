@@ -51,7 +51,7 @@ BUFFER_OBJ atRxBuffer; // Buffer to be used for receiving
 // This device's friendly Bluetooth name
 const AT_COMMAND_PART deviceName = {"TRANSPORT", 9};
 // Host/Controller's friendly Bluetooth name
-const AT_COMMAND_PART controllerHostName = {"KURT-PC", 7};
+const AT_COMMAND_PART controllerHostName = {"THELAPTOP", 9};
 // Host/Controller's Bluetooth MAC address
 ADDRESS controllerHostAddr;
 /////////////////////////////////////

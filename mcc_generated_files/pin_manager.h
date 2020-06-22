@@ -9,13 +9,13 @@
 #define PIN_DIRECTION_OUTPUT 0
 #define PIN_DIRECTION_INPUT 1
 
-// Do not use as IO, RA0 is the ICSP PGC
+// RA0 is the ICSP PGC
 #define IO_RA0_SetPin(STATE)          (_LATA0 = STATE)
 #define IO_RA0_Toggle()           (_LATA0 ^= 1)
 #define IO_RA0_GetValue()         _RA0
 #define IO_RA0_SetDirection(DIR)  (_TRISA0 = DIR)
 
-// Do not use as IO, RA1 is the ICSP PGD
+// RA1 is the ICSP PGD
 #define IO_RA1_SetPin(STATE)          (_LATA1 = STATE)
 #define IO_RA1_Toggle()           (_LATA1 ^= 1)
 #define IO_RA1_GetValue()         _RA1

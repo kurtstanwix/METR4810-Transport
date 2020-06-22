@@ -7,11 +7,12 @@
 #include "util.h"
 
 #define BLUETOOTH_UART_NUM 1
+// Only use PC UART if debugging
 #ifdef __USER_DEBUG
 #define PC_UART_NUM 2
 #endif
 
-// define concatenation to call uart functions from the uart number
+// Define concatenation to call UART functions from the UART number
 #define UART_FUNC_WRAPPER(UART_NUM, FUNC) UART ## UART_NUM ## _ ## FUNC
 
 // Generic wrapper of the functions in a UART
@@ -33,6 +34,7 @@
 #define BLUETOOTH_CLEAR_TX_BUFFER() UART_CLEAR_TX_BUFFER(BLUETOOTH_UART_NUM)
 #define BLUETOOTH_INITIALISE() UART_INITIALISE(BLUETOOTH_UART_NUM)
 
+// To prevent any potential not defined errors, set PC to Bluetooth when PC is not used
 #ifndef PC_UART_NUM
 #define PC_UART_NUM BLUETOOTH_UART_NUM
 #endif
@@ -40,7 +42,7 @@
 #endif
 
 #ifdef PC_UART_NUM
-
+// PC specific wrappers
 #define PC_WRITE(DATA) UART_WRITE(PC_UART_NUM, DATA)
 #define PC_READ() UART_READ(PC_UART_NUM)
 #define PC_RX_READY() UART_RX_READY(PC_UART_NUM)
@@ -60,8 +62,11 @@
 // Buffer was full before EOL received
 #define UART_RX_STATUS_BF 2
 
+// No characters read
 #define UART_READ_LINE_NOTHING 0
+// Some characters read but not a full line
 #define UART_READ_LINE_PARTIAL 1
+// Full line read
 #define UART_READ_LINE_RECEIVED 2
 
 void UART_Initialise(void);

@@ -15,4 +15,4 @@
 
 void CLOCK_Initialize(void);
 
-#endif	/* CLOCK_H */
+#endif	// CLOCK_H

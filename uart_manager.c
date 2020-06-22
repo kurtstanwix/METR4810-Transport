@@ -2,6 +2,9 @@
 #include "uart_manager.h"
 #include "mcc_generated_files/pin_manager.h"
 
+/**
+ * Initialise the UART Modules based on if Bluetooth and PC have been defined
+ */
 void UART_Initialise(void) {
 #ifdef BLUETOOTH_UART_NUM
     BLUETOOTH_INITIALISE();
@@ -10,29 +13,21 @@ void UART_Initialise(void) {
     PC_INITIALISE();
 #endif
 }
-#define BLUETOOTH_UART_RX_LED_SetPin(STATE) IO_RB12_SetPin(STATE)
-#define BLUETOOTH_UART_TX_LED_SetPin(STATE) IO_RB13_SetPin(STATE)
-
-#define PC_UART_RX_LED_SetPin(STATE) IO_RB14_SetPin(STATE)
-#define PC_UART_TX_LED_SetPin(STATE) IO_RB15_SetPin(STATE)
 
 /**
  * Read a byte from the UART into the buffer
- * @param buffer
- * @param uartNum
- * @return 
+ * @param buffer buffer to read the byte into
+ * @param uartNum UART to read the byte from
+ * @return the status based on whether data was read or an EOL was read
  */
 uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum) {
-    //uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_ON) :
-    //    PC_UART_RX_LED_SetPin(PIN_STATE_ON); // Receiving LED
     *(buffer->tail) = uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_READ() : PC_READ();
     buffer->tail++;
     if (*(buffer->tail - 1) == '\r') {
+        // Got an \r check for an \n
         *(buffer->tail) = uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_READ() : PC_READ();
         buffer->tail++;
         if (*(buffer->tail - 1) == '\n') {
-            //uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_OFF) :
-            //    PC_UART_RX_LED_SetPin(PIN_STATE_OFF); // Receiving LED
             return UART_RX_STATUS_EOL;
         } else { // Only \r received, remove it
             *(buffer->tail - 2) = *(buffer->tail - 1);
@@ -43,13 +38,8 @@ uint8_t read_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum) {
         // Maximum size of buffer reached without receiving \r\n
         *(buffer->tail++) = '\r';
         *(buffer->tail++) = '\n';
-        //uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_OFF) :
-        //    PC_UART_RX_LED_SetPin(PIN_STATE_OFF); // Receiving LED
         return UART_RX_STATUS_BF;
-        //send_buffer(&packetBuffer, PC_UART_NUM, true);
     }
-    //uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_RX_LED_SetPin(PIN_STATE_OFF) : \
-    //    PC_UART_RX_LED_SetPin(PIN_STATE_OFF);
     return UART_RX_STATUS_MORE;
 }
 
@@ -77,34 +67,37 @@ uint8_t read_line_to_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, uint16_t timeou
             MS_TIMER_Delay_ms(1);
             elapsed++;
             if (timeout && elapsed >= timeout) {
-                break;
+                break; // Timed out without reading line
             }
             continue;
         }
+        // Byte ready to read
         rxStatus = read_to_buffer(buffer, uartNum);
         status = UART_READ_LINE_PARTIAL;
         
         if (rxStatus == UART_RX_STATUS_EOL || rxStatus == UART_RX_STATUS_BF) {
-            //flag = true;
-            status = UART_READ_LINE_RECEIVED;
+            status = UART_READ_LINE_RECEIVED; // Got a line
             break;
         }
     }
     return status;
 }
 
-// Send the buffer contents to the specified uartNum
+/**
+ * Send the buffer contents to the specified uartNum
+ * @param buffer buffer with the contents in it to send
+ * @param uartNum UART to send contents to
+ * @param clearBuffer if true, will clear the buffer after sending
+ */
 void send_buffer(BUFFER_OBJ *buffer, uint8_t uartNum, bool clearBuffer) {
     uint8_t *sendPos = buffer->buffer;
-    //uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_TX_LED_SetPin(PIN_STATE_ON) :
-    //    PC_UART_TX_LED_SetPin(PIN_STATE_ON);
     while (sendPos != buffer->tail) {
+        // Write bytes until end of buffer
         uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_WRITE(*sendPos) : PC_WRITE(*sendPos);
         sendPos++;
     }
-    //uartNum == BLUETOOTH_UART_NUM ? BLUETOOTH_UART_TX_LED_SetPin(PIN_STATE_OFF) :
-    //    PC_UART_TX_LED_SetPin(PIN_STATE_OFF);
     if (clearBuffer) {
+        // Clear buffer is simply resetting the tail
         buffer->tail = buffer->buffer;
     }
 }

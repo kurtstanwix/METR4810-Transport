@@ -3,12 +3,12 @@
 #include "uart_manager.h"
 #include "util.h"
 
-
 /////////////////////////////////////
 // private defines
 /////////////////////////////////////
 #define AT_LENGTH (128+2) // bytes + \r\n
 
+// Lengths of the Bluetooth address parts
 #define NAP_ADDR_LENGTH 4
 #define UAP_ADDR_LENGTH 2
 #define LAP_ADDR_LENGTH 6
@@ -51,7 +51,7 @@ BUFFER_OBJ atRxBuffer; // Buffer to be used for receiving
 // This device's friendly Bluetooth name
 const AT_COMMAND_PART deviceName = {"TRANSPORT", 9};
 // Host/Controller's friendly Bluetooth name
-const AT_COMMAND_PART controllerHostName = {"THELAPTOP", 9};
+const AT_COMMAND_PART controllerHostName = {"CONTROLLER", 10};
 // Host/Controller's Bluetooth MAC address
 ADDRESS controllerHostAddr;
 /////////////////////////////////////
@@ -122,7 +122,7 @@ void init_bluetooth(void) {
     MS_TIMER_Delay_ms(1000); // Wait for bluetooth to boot before restarting
     init_buffer(&atRxBuffer, AT_LENGTH);
     init_buffer(&atTxBuffer, AT_LENGTH);
-    
+
     AT_PIN_Set();
     AT_COMMAND_PART params;
     MS_TIMER_Delay_ms(100);
@@ -134,7 +134,7 @@ void init_bluetooth(void) {
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
     MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
-    
+
     // UART with 9600 BAUD, 1 stop bit and 0 parity bits
     params.part = "9600,1,0";
     params.length = 8;
@@ -144,7 +144,7 @@ void init_bluetooth(void) {
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
     MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
-    
+
     // Set the device's friendly visible bluetooth name
     create_command(&atTxBuffer, true, atCommands[AT_COMMAND_NAME_INDEX],
             atCommandDividers[AT_COMMAND_SET_CHAR_INDEX],
@@ -152,7 +152,7 @@ void init_bluetooth(void) {
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
     MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
-    
+
     // Standard inquiry mode, max 10 bluetooth devices to inquire
     // Timeout in 4*1.28=5.12 seconds
     params.part = "0,10,4";
@@ -163,7 +163,7 @@ void init_bluetooth(void) {
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
     MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
-    
+
     // Module will connect to any address
     params.part = "1";
     params.length = 1;
@@ -173,7 +173,7 @@ void init_bluetooth(void) {
     send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
     MS_TIMER_Delay_ms(400);
     BLUETOOTH_CLEAR_RX_BUFFER();
-    
+
     // Remove all authenticated devices
     create_command(&atTxBuffer, true, atCommands[AT_COMMAND_RMAAD_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX],
@@ -185,7 +185,7 @@ void init_bluetooth(void) {
 
 /**
  * Checks if buffer contains an AT State response, if it does, returns true and
- * sets the buffers tail to the begining of the response.
+ * sets the buffers tail to the beginning of the response.
  * @param buffer : Buffer to with data to check if it contains an AT+STATE
  * response.
  * @return true if buffer contains a response to an AT+STATE command, false
@@ -198,7 +198,7 @@ uint8_t is_state_response(BUFFER_OBJ *buffer) {
             compare_strings(buffer->buffer + atCommands[AT_COMMAND_STATE_INDEX].length, \
                     atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].part, \
                     atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length)) {
-        
+
         // Set tail position to the start of the state response
         buffer->tail = buffer->buffer + \
                 atCommands[AT_COMMAND_STATE_INDEX].length + \
@@ -219,18 +219,16 @@ uint8_t extract_state(BUFFER_OBJ *buffer) {
     uint8_t numStates = __builtin_divsd(sizeof atStates, sizeof atStates[0]);
     for (i = 0; i < numStates; i++) {
         if (compare_strings(buffer->tail, atStates[i].part, atStates[i].length)) {
-            
+
             // print the state
             print_debug(atStates[i].part, atStates[i].length, true);
-            
+
             return i;
         }
     }
     return BT_STATE_INVALID; // Not a valid state
 }
 
-// 
-// atModeOnExit: 
 /**
  * Queries and returns the state code of the bluetooth module.
  * @param atModeOnExit : if true, leaves the module in AT command mode on return
@@ -246,7 +244,7 @@ uint8_t get_bt_state(bool atModeOnExit) {
         BLUETOOTH_CLEAR_RX_BUFFER();
         AT_PIN_Set();
         MS_TIMER_Delay_ms(100);
-        
+
         send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
         atRxBuffer.tail = atRxBuffer.buffer; // Reset Rx buffer
         rxStatus = read_line_to_buffer(&atRxBuffer, BLUETOOTH_UART_NUM, 100);
@@ -279,22 +277,22 @@ void reset_bluetooth(void) {
 }
 
 /**
- * 
- * @return 
+ * Get the friendly Bluetooth name of the connected device
+ * @return friendly Bluetooth name of the connected device
  */
 bool get_connected_device_name(void) {
     AT_PIN_Clear(); // Clear then set to ensure in AT mode
     MS_TIMER_Delay_ms(100);
     AT_PIN_Set();
     MS_TIMER_Delay_ms(100);
-    
+
     uint8_t attempts = 0; // Get address may fail, keep track of how many tries
     while (true) {
         // Command to get the most recent connected device address, MRAD
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_MRAD_INDEX],
                 atCommands[AT_COMMAND_BLANK_INDEX],
                 atCommands[AT_COMMAND_BLANK_INDEX]);
-        
+
         BLUETOOTH_CLEAR_RX_BUFFER(); // To ensure only the upcoming response is read
         atRxBuffer.tail = atRxBuffer.buffer;
         send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true); // Send address request
@@ -342,7 +340,7 @@ bool get_connected_device_name(void) {
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_RNAME_INDEX],
                 atCommandDividers[AT_COMMAND_QUERY_CHAR_INDEX],
                 tempAddr);
-        
+
         atRxBuffer.tail = atRxBuffer.buffer;
         send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true); // Send name request
         // Gets the response, with a large timeout as requesting a device name can
@@ -372,67 +370,59 @@ bool get_connected_device_name(void) {
     copy_to_buffer(&atRxBuffer,
             atRxBuffer.buffer + atCommands[AT_COMMAND_RNAME_INDEX].length + \
             atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length,
-            atRxBuffer.tail - 
+            atRxBuffer.tail -
             (atRxBuffer.buffer + atCommands[AT_COMMAND_RNAME_INDEX].length + \
             atCommandDividers[AT_COMMAND_RESPONSE_CHAR_INDEX].length),
             true);
     return true;
 }
 
-// Will wait indefinitely until a connection is made to a device with the correct
-// host name
+/**
+ * Wait for a Controller System to connect to this device. Will wait indefinitely
+ * until a connection is made to a device with the correct host name
+ */
 void wait_for_connection(void) {
     while (true) {
+        STATUS_LED_SetPin(PIN_STATE_OFF);
         init_bluetooth();
+        STATUS_LED_SetPin(PIN_STATE_ON);
         while (!BT_IS_CONNECTED()) { // Pin will be high when connected
             AT_PIN_Clear();
-            //get_bt_state(false);
             MS_TIMER_Delay_ms(100);
         }
-        // Need to decide if an exact hostname is required, or the base (first part)
-        // matching is fine, allowing for suffixes to distinguish different controllers
-        // Uncomment an combine the following to one if, if an exact match is needed
-        /*
-        if ((atRxBuffer.tail - atRxBuffer.buffer - 2) == controllerHostName.length)
-         */
+        // The host need only start with the host name, allowing for a suffix at the end
+        // if needed
         if (get_connected_device_name() &&
                 compare_strings(atRxBuffer.buffer, controllerHostName.part, controllerHostName.length)) {
             break;
         }
+        // Host name did not match, disconnect with this device and reinitialise
         print_debug("Host Name Incorrect: ", 21, false);
         print_debug(atRxBuffer.buffer, atRxBuffer.tail - atRxBuffer.buffer, false);
         atRxBuffer.tail = atRxBuffer.buffer;
-        
+
         create_command(&atTxBuffer, true, atCommands[AT_COMMAND_DISC_INDEX],
-            atCommands[AT_COMMAND_BLANK_INDEX],
-            atCommands[AT_COMMAND_BLANK_INDEX]);
+                atCommands[AT_COMMAND_BLANK_INDEX],
+                atCommands[AT_COMMAND_BLANK_INDEX]);
         send_buffer(&atTxBuffer, BLUETOOTH_UART_NUM, true);
         MS_TIMER_Delay_ms(100);
         AT_PIN_Clear();
-        //TMR1_Delay_ms(400);
         BLUETOOTH_CLEAR_RX_BUFFER();
-        //init_bluetooth();
-        //reset_bluetooth();
     }
     AT_PIN_Clear();
     MS_TIMER_Delay_ms(20);
     BLUETOOTH_CLEAR_RX_BUFFER();
-    /*uint8_t state = BT_STATE_INVALID;
-    while (state != BT_STATE_CONNECTED_INDEX) {
-        state = get_bt_state(false);
-        TMR1_Delay_ms(200);
-        BLUETOOTH_CLEAR_RX_BUFFER();
-    }
-    AT_PIN_Clear();
-    TMR1_Delay_ms(100);*/
 }
-
-
 
 /////////////////////////////////////
 // private function implementations
 /////////////////////////////////////
 
+/**
+ * Determines if the address is a valid Bluetooth address
+ * @param address the address to check
+ * @return true if address is a valid Bluetooth address
+ */
 bool is_valid_address(ADDRESS address) {
     uint8_t i;
     for (i = 0; i < NAP_ADDR_LENGTH; i++) {
@@ -440,40 +430,51 @@ bool is_valid_address(ADDRESS address) {
             return true;
         }
     }
-    return false; // Upper 4 bytes are 
+    return false; // Upper 4 bytes are not 0 
 }
 
+/**
+ * Format the address into a string
+ * @param address address to format
+ * @param seperatorIndex the seperator to use between address parts
+ */
 void format_address(ADDRESS *address, uint8_t seperatorIndex) {
     uint8_t i;
     uint8_t offset = 0;
+    // Fill upper bytes
     for (i = 0; i < 4; i++) {
         address->formatted[i] = address->nap[i];
     }
     address->formatted[i++] = atCommandDividers[seperatorIndex].part[0];
     offset += i;
+    // Fill middle bytes
     for (i = 0; i < 2; i++) {
         address->formatted[offset + i] = address->uap[i];
     }
     address->formatted[offset + i++] = atCommandDividers[seperatorIndex].part[0];
     offset += i;
+    // Fill lower bytes
     for (i = 0; i < 6; i++) {
         address->formatted[offset + i] = address->lap[i];
     }
 }
 
+/**
+ * Extract the Bluetooth address from a string
+ * @param address destination for extracted address
+ * @param addrStr string to extract the address from
+ */
 void extract_address(ADDRESS *address, uint8_t *addrStr) {
     uint8_t addrSeperator = atCommandDividers[AT_COMMAND_ADDR_SEPERATOR_CHAR_INDEX].part[0];
     uint8_t paramSeperator = atCommandDividers[AT_COMMAND_PARAM_SEPERATOR_CHAR_INDEX].part[0];
-    //int8_t i;
-    //for (i = 0; i < FORMATTED_ADDR_LENGTH; i++) {
-    //    address->formatted[i] = '0';
-    //}
-    //i--;
+    
+    // Find the end of the string
     uint8_t *pos = addrStr;
     while (*pos != '\r') {
         pos++;
     }
     pos--;
+    // Get the lower bytes, padding with zero if necessary
     uint8_t j = LAP_ADDR_LENGTH;
     while (j > 0) {
         if (pos == (addrStr - 1)) {
@@ -486,6 +487,7 @@ void extract_address(ADDRESS *address, uint8_t *addrStr) {
             address->lap[--j] = *(pos--);
         }
     }
+    // Get the middle bytes, padding with zero if necessary
     j = UAP_ADDR_LENGTH;
     while (j > 0) {
         if (pos == (addrStr - 1)) {
@@ -498,6 +500,7 @@ void extract_address(ADDRESS *address, uint8_t *addrStr) {
             address->uap[--j] = *(pos--);
         }
     }
+    // Get the upper bytes, padding with zero if necessary
     j = NAP_ADDR_LENGTH;
     while (j > 0) {
         if (pos == (addrStr - 1)) {
@@ -510,52 +513,33 @@ void extract_address(ADDRESS *address, uint8_t *addrStr) {
             address->nap[--j] = *(pos--);
         }
     }
-    /*
-    
-    //pos--;
-    
-    
-    uint8_t start = 0;
-    
-    while (addrStr[i] != addrSeperator) {
-        address->nap[i] = addrStr[i];
-        i++;
-    }
-    // Only 2 bytes in upper, pre-pad with two "0"'s
-    if (i == 2) {
-        address->nap[2] = address->nap[0];
-        address->nap[3] = address->nap[1];
-        address->nap[0] = '0';
-        address->nap[1] = '0';
-    }
-    i++;
-    start = i;
-    while (addrStr[i] != addrSeperator) {
-        address->uap[i - start] = addrStr[i];
-        i++;
-    }
-    i++;
-    start = i;
-    while (!(addrStr[i] == '\r' || addrStr[i] == paramSeperator)) {
-        address->lap[i - start] = addrStr[i];
-        i++;
-    }*/
 }
 
-// Creates an AT reset message as per HC-05 documentation
+/**
+ * Creates an AT reset message as per HC-05 documentation
+ * @param buffer buffer to store the command
+ */
 void create_reset(BUFFER_OBJ *buffer) {
     create_command(buffer, true, atCommands[AT_COMMAND_RESET_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX],
             atCommands[AT_COMMAND_BLANK_INDEX]);
 }
 
+/**
+ * Create a given AT command as per HC-05 documentation
+ * @param buffer buffer to store the command
+ * @param prefix whether to use the AT+ prefix
+ * @param command the command to create
+ * @param seperator the separator between command and parameters
+ * @param param the parameters to use
+ */
 void create_command(BUFFER_OBJ *buffer, bool prefix, AT_COMMAND_PART command,
         AT_COMMAND_PART seperator, AT_COMMAND_PART param) {
     if (prefix) {
         copy_to_buffer(buffer,
-            atCommandDividers[AT_COMMAND_PREFIX_INDEX].part,
-            atCommandDividers[AT_COMMAND_PREFIX_INDEX].length,
-            true);
+                atCommandDividers[AT_COMMAND_PREFIX_INDEX].part,
+                atCommandDividers[AT_COMMAND_PREFIX_INDEX].length,
+                true);
     }
     copy_to_buffer(buffer, command.part, command.length, !prefix);
     copy_to_buffer(buffer, seperator.part, seperator.length, false);

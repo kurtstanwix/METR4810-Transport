@@ -2,8 +2,10 @@
 #include <stdbool.h>
 #include "mcc_generated_files/clock.h"
 
+// Current mode of OC
 static const uint16_t OCMode = 0b110; // Edge-Aligned PWM;
 
+// Duty cycles of each PWM
 uint16_t dutyCycle1 = 500;
 uint16_t dutyCycle2 = 500;
 uint16_t dutyCycle3 = 500;
@@ -18,6 +20,9 @@ uint16_t dutyCycle3 = 500;
 
 #define HARDWARE_PWM_OC_REGISTER(OC_NUM, REGISTER) PREPROCESSOR_STITCH(OC, PREPROCESSOR_STITCH(OC_NUM, REGISTER))
 
+/**
+ * Intialises the Hardware PWM's to be ready for use
+ */
 void Hardware_PWM_Initialise(void) {
 #ifdef HARDWARE_PWM1_OC_NUM
     /* Output Compare for PWM1 Control Register 1
@@ -160,6 +165,11 @@ void Hardware_PWM_Initialise(void) {
     //TMR_FUNCTION(HARDWARE_PWM_TMR, Initialize());
 }
 
+/**
+ * Sets the period of the PWM in microseconds
+ * @param pwmNum PWM to set period of
+ * @param us period of PWM in microseconds
+ */
 void Hardware_PWM_Period_Set_us(uint8_t pwmNum, uint32_t us) {
     /* Datasheet has period formula of:
      * period = (OC2RS + 1) / TMRFreq */
@@ -193,6 +203,11 @@ void Hardware_PWM_Period_Set_us(uint8_t pwmNum, uint32_t us) {
     
 }
 
+/**
+ * Set the pulse width of the PWM in microseconds
+ * @param pwmNum PWM to set the pulse width of
+ * @param us pulse width of PWM in microseconds
+ */
 void Hardware_PWM_Pulse_Width_Set_us(uint8_t pwmNum, uint32_t us) {
     // Minimum is prescaler / 2 in uS
     // Maximum is prescaler * 2^14 in uS
@@ -218,9 +233,9 @@ void Hardware_PWM_Pulse_Width_Set_us(uint8_t pwmNum, uint32_t us) {
 }
 
 /**
- * Duty cycle in 1/10th of 1%: 1000 = 100%
- * @param pwmNum
- * @param percent
+ * Set the duty cycle of the PWM given in 1/10th of 1%: 1000 = 100%
+ * @param pwmNum PWM to set the duty cycle of
+ * @param percent 1/10th of a percentage to set the PWM's duty cycle
  */
 void Hardware_PWM_Duty_Cycle_Set(uint8_t pwmNum, uint16_t percent) {
     switch (pwmNum) {
@@ -248,6 +263,10 @@ void Hardware_PWM_Duty_Cycle_Set(uint8_t pwmNum, uint16_t percent) {
     }
 }
 
+/**
+ * Starts the individual PWM OC module
+ * @param pwmNum PWM to start
+ */
 void Hardware_PWM_Start(uint8_t pwmNum) {
     switch (pwmNum) {
 #ifdef HARDWARE_PWM1_OC_NUM
@@ -268,6 +287,10 @@ void Hardware_PWM_Start(uint8_t pwmNum) {
     }
 }
 
+/**
+ * Stops the individual PWM OC module
+ * @param pwmNum PWM to stop
+ */
 void Hardware_PWM_Stop(uint8_t pwmNum) {
     switch (pwmNum) {
 #ifdef HARDWARE_PWM1_OC_NUM
@@ -288,10 +311,16 @@ void Hardware_PWM_Stop(uint8_t pwmNum) {
     }
 }
 
+/**
+ * Enables the timer the PWM is using. Must be called before use
+ */
 void Hardware_PWM_Enable(void) {
     TMR_TxCONbits(HARDWARE_PWM_TMR).TON = 1;
 }
 
+/**
+ * Enables the timer the PWM is using.
+ */
 void Hardware_PWM_Disable(void) {
 #ifdef HARDWARE_PWM1_OC_NUM
     Hardware_PWM_Stop(HARDWARE_PWM1_OC_NUM);

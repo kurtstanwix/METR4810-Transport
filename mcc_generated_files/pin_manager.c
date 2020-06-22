@@ -39,8 +39,10 @@ void PIN_MANAGER_Initialize(void) {
     IO_RB9_SetDirection(PIN_DIRECTION_INPUT);
     IO_RB12_SetDirection(PIN_DIRECTION_OUTPUT);
     IO_RB13_SetDirection(PIN_DIRECTION_OUTPUT);
-    IO_RB14_SetDirection(PIN_DIRECTION_INPUT);
-    IO_RB15_SetDirection(PIN_DIRECTION_INPUT);
+    IO_RB14_SetDirection(PIN_DIRECTION_INPUT); // Encoder A
+    IO_RB15_SetDirection(PIN_DIRECTION_INPUT); // Encoder B
+    
+    STATUS_LED_SetDirection(PIN_DIRECTION_OUTPUT);
 
     /****************************************************************************
      * Setting the Weak Pull Up and Weak Pull Down SFR(s)

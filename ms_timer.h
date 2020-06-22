@@ -4,7 +4,9 @@
 #include <xc.h>
 #include "util.h"
 
+// Millisecond value type
 typedef uint32_t ms_time_t;
+// Microsecond value type
 typedef uint32_t us_time_t;
 
 #define MS_TIMER_TMR 1

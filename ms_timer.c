@@ -4,9 +4,12 @@
 #include "tmr.h"
 #include "util.h"
 
+// Stores the current time
 volatile ms_time_t currentTime;
+// Time when a delay call ends
 volatile ms_time_t delayEndTime;
 
+// Register definitions for ability to switch timer modules
 #define MS_TIMER_TMR_REGISTER TMR_TMR_REGISTER(MS_TIMER_TMR)
 #define MS_TIMER_PR_REGISTER TMR_PR_REGISTER(MS_TIMER_TMR)
 #define MS_TIMER_TxCON_REGISTER TMR_TxCON_REGISTER(MS_TIMER_TMR)
@@ -23,6 +26,9 @@ volatile ms_time_t delayEndTime;
  */
 #define MS_TIMER_PRESCALER 8
 
+/**
+ * Initialises the TMR module for the millisecond timer
+ */
 void MS_TIMER_Initialize(void) {
     //TMR1 0; 
     MS_TIMER_TMR_REGISTER = 0x00;
@@ -43,7 +49,7 @@ void MS_TIMER_Initialize(void) {
         case 1:
             MS_TIMER_TxCONbits.TCKPS = 0b00;
     }
-    MS_TIMER_TxCONbits.TON = 1; // Disable for now
+    MS_TIMER_TxCONbits.TON = 1;
 
     delayEndTime = 0;
 
@@ -51,33 +57,43 @@ void MS_TIMER_Initialize(void) {
     MS_TIMER_TxIE = true;
 }
 
-/*
-float MS_TIMER_PeriodGetNS(void) {
-    return (MS_TIMER_PR_REGISTER + 1) * MS_TIMER_PRESCALER * (1000000000 / CLOCK_PeripheralFrequencyGet());
-}
-
-float MS_TIMER_TickFrequencyGet(void) {
-    return CLOCK_PeripheralFrequencyGet() / MS_TIMER_PRESCALER;
-}
+/**
+ * Waits the specified amount of time in milliseconds before returning
+ * @param ms time in milliseconds to wait
  */
-
 void MS_TIMER_Delay_ms(uint16_t ms) {
     delayEndTime = currentTime + ms;
     while (currentTime < delayEndTime); // Wait desired milliseconds
 }
 
+/**
+ * Get the current time since system start in milliseconds
+ * @return current time since system start in milliseconds
+ */
 ms_time_t MS_TIMER_get_time_ms(void) {
     return currentTime;
 }
 
+/**
+ * Get the timer module's current count register
+ * @return TMR register value of the timer module
+ */
 uint16_t MS_TIMER_get_TMR(void) {
     return MS_TIMER_TMR_REGISTER;
 }
 
+/**
+ * Get the current time since system start in microseconds. as the timer is configured
+ * for accurate millisecond counts, this may be inaccurate by up to 1000 microseconds
+ * @return current time since system start in microseconds
+ */
 us_time_t MS_TIMER_get_time_us(void) {
     return currentTime * 1000 + __builtin_divsd(((uint32_t) MS_TIMER_TMR_REGISTER * 1000), 1999);
 }
 
+/**
+ * The interrupt used to update the timer value
+ */
 void __attribute__((interrupt, no_auto_psv)) MS_TIMER_TxInterrupt() {
     currentTime++;
     MS_TIMER_TxIF = 0; // Clear interrupt flag

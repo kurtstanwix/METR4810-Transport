@@ -6,4 +6,4 @@
 
 void SYSTEM_Initialize(void);
 
-#endif	/* SYSTEM_H */
+#endif	// SYSTEM_H

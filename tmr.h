@@ -1,8 +1,11 @@
 #ifndef TMR_H
 #define	TMR_H
 
-#include <xc.h> // include processor files - each processor file is guarded.
+#include <xc.h>
 #include "util.h"
+
+// Defines to modify and read TMR registers, allowing for switching between timers
+// by changing a single value
 
 #define TMR_TMR_REGISTER(TMR_NUM) PREPROCESSOR_STITCH(TMR, TMR_NUM)
 #define TMR_PR_REGISTER(TMR_NUM) PREPROCESSOR_STITCH(PR, TMR_NUM)

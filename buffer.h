@@ -5,6 +5,7 @@
 
 #define MAX_BUFFER_SIZE (64+2)
 
+// A buffer to be used for communications
 typedef struct _BUFFER_OBJ {
     uint8_t buffer[MAX_BUFFER_SIZE];
     uint8_t *tail;
